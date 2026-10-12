@@ -38,6 +38,17 @@ describe('appliquerFiltre', () => {
     expect(lireGris(sortie, 200, 30)).toBe(255);
   });
 
+  it('un trait épais (titre, stylo appuyé) reste plein et foncé, il ne devient pas creux', () => {
+    // feuille 1200 x 800 : bande noire de 40 px, comme un gros titre sur une photo de 3 000 px
+    const img = imageDegrade(1200, 800, 150, 225);
+    remplirPolygone(img, [{ x: 300, y: 380 }, { x: 900, y: 380 }, { x: 900, y: 420 }, { x: 300, y: 420 }], 20);
+    for (const filtre of ['ameliore', 'nb'] as const) {
+      const sortie = appliquerFiltre(cv, img, filtre);
+      expect(lireGris(sortie, 600, 400), `${filtre} : centre du trait`).toBeLessThan(60);
+      expect(lireGris(sortie, 600, 200), `${filtre} : papier`).toBeGreaterThan(230);
+    }
+  });
+
   it('amélioré : l\'ombre disparaît, l\'écriture reste sombre', () => {
     const sortie = appliquerFiltre(cv, papierOmbre(), 'ameliore');
     expect(lireGris(sortie, 20, 30)).toBeGreaterThan(230);
