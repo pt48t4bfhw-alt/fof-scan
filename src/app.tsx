@@ -4,6 +4,7 @@ import type { Ecran, Nav } from './ecrans/navigation';
 import { Viseur } from './ecrans/Viseur';
 import { Recadrage } from './ecrans/Recadrage';
 import { Filtres } from './ecrans/Filtres';
+import { DocumentEcran } from './ecrans/DocumentEcran';
 import { demanderStockagePermanent } from './navigateur/stockage';
 import { ouvrirDepot, type Depot } from './rangement/depot';
 import { traitement } from './traitement/client';
@@ -43,7 +44,7 @@ export function App() {
           {ecran.nom === 'viseur' && <Viseur documentId={ecran.documentId} nav={nav} outilPret={outilPret} />}
           {ecran.nom === 'recadrage' && <Recadrage lot={ecran.lot} nav={nav} />}
           {ecran.nom === 'filtres' && <Filtres lot={ecran.lot} depot={depot} nav={nav} />}
-          {ecran.nom === 'document' && <Bientot nav={nav} />}
+          {ecran.nom === 'document' && <DocumentEcran id={ecran.id} depot={depot} nav={nav} />}
           {ecran.nom === 'export' && <Bientot nav={nav} />}
         </>
       )}
