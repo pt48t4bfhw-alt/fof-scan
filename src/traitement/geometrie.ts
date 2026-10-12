@@ -40,6 +40,26 @@ export function tailleRedressee(coins: Coins, coteMax = 3000): { largeur: number
   return { largeur, hauteur };
 }
 
+/** Milieu du côté `cote` (0 haut, 1 droite, 2 bas, 3 gauche), entre le coin `cote` et le suivant. */
+export function milieuCote(coins: Coins, cote: number): Point {
+  const a = coins[cote], b = coins[(cote + 1) % 4];
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+/**
+ * Déplace tout le côté `cote` d'un bloc, à partir des coins `base` (ceux du début du glisser) :
+ * seule la part du mouvement perpendiculaire au côté compte, il reste donc parallèle à lui-même.
+ */
+export function deplacerCote(base: Coins, cote: number, depart: Point, actuel: Point): Coins {
+  const a = base[cote], b = base[(cote + 1) % 4];
+  const longueur = dist(a, b) || 1;
+  const normale = { x: -(b.y - a.y) / longueur, y: (b.x - a.x) / longueur };
+  const d = (actuel.x - depart.x) * normale.x + (actuel.y - depart.y) * normale.y;
+  return base.map((p, k) => (k === cote || k === (cote + 1) % 4
+    ? { x: p.x + normale.x * d, y: p.y + normale.y * d }
+    : p)) as Coins;
+}
+
 export function coinsStables(a: Coins, b: Coins, diagonale: number, seuil = 0.02): boolean {
   return a.every((p, i) => dist(p, b[i]) <= seuil * diagonale);
 }

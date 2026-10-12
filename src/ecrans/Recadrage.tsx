@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { urlImage } from '../navigateur/images';
 import type { PageBrouillon } from '../rangement/modele';
-import { coinsPleineImage, ordonnerCoins } from '../traitement/geometrie';
+import { coinsPleineImage, deplacerCote, milieuCote, ordonnerCoins } from '../traitement/geometrie';
 import type { Coins, Point, Rotation } from '../traitement/types';
 import { retour, type Lot, type Nav } from './navigation';
 
@@ -10,6 +10,8 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
   const [i, setI] = useState(0);
   const [url, setUrl] = useState<string | null>(null);
   const [glisse, setGlisse] = useState<number | null>(null);
+  // Glisser d'une poignée de milieu : tout le côté bouge, à partir des coins du début du geste.
+  const [glisseCote, setGlisseCote] = useState<{ cote: number; depart: Point; base: Coins } | null>(null);
   // La loupe se place du côté opposé au doigt, pour ne pas cacher le coin qu'on déplace.
   const [loupeADroite, setLoupeADroite] = useState(false);
   const svg = useRef<SVGSVGElement>(null);
@@ -51,11 +53,27 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
     ctx.stroke();
   }
 
+  const dansImage = (p: Point): Point => ({
+    x: Math.min(Math.max(p.x, 0), b.original.largeur),
+    y: Math.min(Math.max(p.y, 0), b.original.hauteur),
+  });
+
   function bouger(e: PointerEvent) {
+    if (glisseCote) {
+      const coins = deplacerCote(glisseCote.base, glisseCote.cote, glisseCote.depart, pointImage(e)).map(dansImage) as Coins;
+      modifier({ coins });
+      dessinerLoupe(milieuCote(coins, glisseCote.cote));
+      return;
+    }
     if (glisse === null) return;
     const p = pointImage(e);
     modifier({ coins: b.coins.map((c, k) => (k === glisse ? p : c)) as Coins });
     dessinerLoupe(p);
+  }
+
+  function lacher() {
+    setGlisse(null);
+    setGlisseCote(null);
   }
 
   /** Part de l'angle à jour (et non de `b`) : plusieurs touchers rapides s'additionnent bien. */
@@ -70,10 +88,24 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
   const r = b.original.largeur / 25;
   return (
     <div class="plein">
-      <div class="zone" onPointerMove={bouger} onPointerUp={() => setGlisse(null)} onPointerCancel={() => setGlisse(null)}>
+      <div class="zone" onPointerMove={bouger} onPointerUp={lacher} onPointerCancel={lacher}>
         {url && <img ref={image} class="scene" src={url} alt="" />}
         <svg ref={svg} class="calque" viewBox={`0 0 ${b.original.largeur} ${b.original.hauteur}`} preserveAspectRatio="xMidYMid meet">
           <polygon points={b.coins.map((p) => `${p.x},${p.y}`).join(' ')} fill="rgba(47,179,107,.15)" stroke="#2fb36b" stroke-width={r / 4} />
+          {[0, 1, 2, 3].map((cote) => {
+            const m = milieuCote(b.coins, cote);
+            return (
+              <g key={`cote-${cote}`}>
+                <circle cx={m.x} cy={m.y} r={r * 0.7} fill="#2fb36b" stroke="#fff" stroke-width={r / 5} />
+                <circle cx={m.x} cy={m.y} r={r * 1.6} fill="transparent" style={{ pointerEvents: 'all' }}
+                  onPointerDown={(e) => {
+                    (e.currentTarget as Element).setPointerCapture(e.pointerId);
+                    setGlisseCote({ cote, depart: pointImage(e), base: b.coins });
+                    dessinerLoupe(m);
+                  }} />
+              </g>
+            );
+          })}
           {b.coins.map((c, k) => (
             <g key={k}>
               <circle cx={c.x} cy={c.y} r={r} fill="rgba(255,255,255,.35)" stroke="#2fb36b" stroke-width={r / 4} />
@@ -82,8 +114,8 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
             </g>
           ))}
         </svg>
-        <canvas ref={loupe} class="loupe" width={120} height={120} style={{ display: glisse === null ? 'none' : 'block', ...(loupeADroite ? { left: 'auto', right: '12px' } : {}) }} />
-        {!b.detecte && glisse === null && <p class="calque-texte">Feuille non détectée : placez les coins à la main.</p>}
+        <canvas ref={loupe} class="loupe" width={120} height={120} style={{ display: glisse === null && !glisseCote ? 'none' : 'block', ...(loupeADroite ? { left: 'auto', right: '12px' } : {}) }} />
+        {!b.detecte && glisse === null && !glisseCote && <p class="calque-texte">Feuille non détectée : placez les coins à la main.</p>}
       </div>
       <div class="commandes">
         <button onClick={() => nav.aller(retour(lot))}>Annuler</button>

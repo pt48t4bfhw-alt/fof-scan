@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  DeclencheurAuto, SuiviStabilite, coinsPleineImage, coinsStables, dimensionsReduites,
-  mettreAEchelle, ordonnerCoins, tailleRedressee,
+  DeclencheurAuto, SuiviStabilite, coinsPleineImage, coinsStables, deplacerCote, dimensionsReduites,
+  mettreAEchelle, milieuCote, ordonnerCoins, tailleRedressee,
 } from '../src/traitement/geometrie';
 import type { Coins } from '../src/traitement/types';
 
@@ -40,6 +40,40 @@ describe('tailles', () => {
     expect(t.largeur).toBe(Math.round(Math.max(Math.hypot(270, 15), Math.hypot(305, 20))));
     expect(t.hauteur).toBe(Math.round(Math.max(Math.hypot(15, 210), Math.hypot(20, 215))));
     expect(Math.max(...Object.values(tailleRedressee(mettreAEchelle(feuille, 100))))).toBe(3000);
+  });
+});
+
+describe('poignées au milieu des côtés', () => {
+  const rect = coinsPleineImage(100, 80);
+
+  it('donne le milieu de chaque côté (0 haut, 1 droite, 2 bas, 3 gauche)', () => {
+    expect([0, 1, 2, 3].map((k) => milieuCote(rect, k))).toEqual([
+      { x: 50, y: 0 }, { x: 100, y: 40 }, { x: 50, y: 80 }, { x: 0, y: 40 },
+    ]);
+  });
+
+  it('déplace tout le côté haut vers le bas, en ignorant le glissement de côté', () => {
+    expect(deplacerCote(rect, 0, { x: 50, y: 0 }, { x: 70, y: 15 })).toEqual([
+      { x: 0, y: 15 }, { x: 100, y: 15 }, { x: 100, y: 80 }, { x: 0, y: 80 },
+    ]);
+  });
+
+  it('déplace tout le côté droit vers la gauche', () => {
+    expect(deplacerCote(rect, 1, { x: 100, y: 40 }, { x: 80, y: 50 })).toEqual([
+      { x: 0, y: 0 }, { x: 80, y: 0 }, { x: 80, y: 80 }, { x: 0, y: 80 },
+    ]);
+  });
+
+  it('sur un côté penché, le côté reste parallèle et ne bouge que perpendiculairement', () => {
+    const avant = feuille;
+    const apres = deplacerCote(avant, 0, milieuCote(avant, 0), { x: 200, y: 90 });
+    const dx0 = apres[0].x - avant[0].x, dy0 = apres[0].y - avant[0].y;
+    expect(apres[1].x - avant[1].x).toBeCloseTo(dx0);
+    expect(apres[1].y - avant[1].y).toBeCloseTo(dy0);
+    const cote = { x: avant[1].x - avant[0].x, y: avant[1].y - avant[0].y };
+    expect(dx0 * cote.x + dy0 * cote.y).toBeCloseTo(0);
+    expect(apres[2]).toEqual(avant[2]);
+    expect(apres[3]).toEqual(avant[3]);
   });
 });
 
