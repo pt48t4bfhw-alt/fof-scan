@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
 
@@ -10,5 +11,6 @@ export default defineConfig(({ command }) => ({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     testTimeout: 60000,
+    alias: { '@techstark/opencv-js': fileURLToPath(new URL('./tests/aides/opencv-node.ts', import.meta.url)) },
   },
 }));
