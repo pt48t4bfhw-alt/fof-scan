@@ -5,13 +5,10 @@ import { Viseur } from './ecrans/Viseur';
 import { Recadrage } from './ecrans/Recadrage';
 import { Filtres } from './ecrans/Filtres';
 import { DocumentEcran } from './ecrans/DocumentEcran';
+import { ExportEcran } from './ecrans/ExportEcran';
 import { demanderStockagePermanent } from './navigateur/stockage';
 import { ouvrirDepot, type Depot } from './rangement/depot';
 import { traitement } from './traitement/client';
-
-function Bientot({ nav }: { nav: Nav }) {
-  return <main class="ecran"><p>Écran à venir.</p><button onClick={() => nav.aller({ nom: 'accueil' })}>Retour</button></main>;
-}
 
 export function App() {
   const [depot, setDepot] = useState<Depot | null>(null);
@@ -45,7 +42,7 @@ export function App() {
           {ecran.nom === 'recadrage' && <Recadrage lot={ecran.lot} nav={nav} />}
           {ecran.nom === 'filtres' && <Filtres lot={ecran.lot} depot={depot} nav={nav} />}
           {ecran.nom === 'document' && <DocumentEcran id={ecran.id} depot={depot} nav={nav} />}
-          {ecran.nom === 'export' && <Bientot nav={nav} />}
+          {ecran.nom === 'export' && <ExportEcran id={ecran.id} depot={depot} nav={nav} />}
         </>
       )}
       {message && <div class="message" role="alert" onClick={() => setMessage(null)}>{message}</div>}
