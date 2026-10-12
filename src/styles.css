@@ -41,6 +41,7 @@ input[type=search], input[type=text] { font: inherit; width: 100%; padding: 12px
 .calque-texte { position: absolute; left: 16px; right: 16px; bottom: 16px; background: #000b; padding: 12px; border-radius: 12px; text-align: center; }
 .commandes { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
   padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px); background: #000; }
+.commandes button:not(.declencheur) { padding: 10px 12px; }
 .commandes.colonne { flex-direction: column; align-items: stretch; }
 .ligne { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 .declencheur { width: 72px; height: 72px; border-radius: 50%; background: #fff; border: 4px solid var(--accent); padding: 0; }
