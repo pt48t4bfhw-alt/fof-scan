@@ -6,7 +6,7 @@ import { Recadrage } from './ecrans/Recadrage';
 import { Filtres } from './ecrans/Filtres';
 import { DocumentEcran } from './ecrans/DocumentEcran';
 import { ExportEcran } from './ecrans/ExportEcran';
-import { BandeauMiseAJour } from './ecrans/BandeauMiseAJour';
+import { MiseAJourAuto } from './ecrans/MiseAJourAuto';
 import { demanderStockagePermanent } from './navigateur/stockage';
 import { ouvrirDepot, type Depot } from './rangement/depot';
 import { traitement } from './traitement/client';
@@ -46,7 +46,7 @@ export function App() {
           {ecran.nom === 'export' && <ExportEcran id={ecran.id} depot={depot} nav={nav} />}
         </>
       )}
-      <BandeauMiseAJour />
+      <MiseAJourAuto surAccueil={ecran.nom === 'accueil'} />
       {message && <div class="message" role="alert" onClick={() => setMessage(null)}>{message}</div>}
     </>
   );
