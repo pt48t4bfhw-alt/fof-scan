@@ -1,3 +1,50 @@
+import { useEffect, useState } from 'preact/hooks';
+import { Accueil } from './ecrans/Accueil';
+import type { Ecran, Nav } from './ecrans/navigation';
+import { demanderStockagePermanent } from './navigateur/stockage';
+import { ouvrirDepot, type Depot } from './rangement/depot';
+import { traitement } from './traitement/client';
+
+function Bientot({ nav }: { nav: Nav }) {
+  return <main class="ecran"><p>Écran à venir.</p><button onClick={() => nav.aller({ nom: 'accueil' })}>Retour</button></main>;
+}
+
 export function App() {
-  return <main class="ecran"><h1>FOF Scan</h1></main>;
+  const [depot, setDepot] = useState<Depot | null>(null);
+  const [ecran, setEcran] = useState<Ecran>({ nom: 'accueil' });
+  const [message, setMessage] = useState<string | null>(null);
+  const [outilPret, setOutilPret] = useState(false);
+
+  useEffect(() => {
+    ouvrirDepot().then(setDepot).catch(() => setMessage("Impossible d'ouvrir la mémoire de l'appli."));
+    demanderStockagePermanent();
+    traitement().preparer()
+      .then(() => setOutilPret(true))
+      .catch(() => setMessage("L'outil de détection n'a pas pu se charger. À la première ouverture, il faut internet."));
+  }, []);
+
+  useEffect(() => {
+    if (!message) return;
+    const t = setTimeout(() => setMessage(null), 6000);
+    return () => clearTimeout(t);
+  }, [message]);
+
+  const nav: Nav = { aller: (e) => { setEcran(e); window.scrollTo(0, 0); }, signaler: setMessage };
+
+  return (
+    <>
+      {!outilPret && ecran.nom === 'accueil' && <div class="progression indeterminee haut"><div /></div>}
+      {!depot ? <main class="ecran"><p class="doux">Chargement…</p></main> : (
+        <>
+          {ecran.nom === 'accueil' && <Accueil depot={depot} nav={nav} />}
+          {ecran.nom === 'viseur' && <Bientot nav={nav} />}
+          {ecran.nom === 'recadrage' && <Bientot nav={nav} />}
+          {ecran.nom === 'filtres' && <Bientot nav={nav} />}
+          {ecran.nom === 'document' && <Bientot nav={nav} />}
+          {ecran.nom === 'export' && <Bientot nav={nav} />}
+        </>
+      )}
+      {message && <div class="message" role="alert" onClick={() => setMessage(null)}>{message}</div>}
+    </>
+  );
 }

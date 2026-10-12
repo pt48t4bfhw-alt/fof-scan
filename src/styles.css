@@ -1,0 +1,55 @@
+:root {
+  --fond: #0f1a14; --surface: #1a2a21; --surface-2: #243a2d;
+  --texte: #eef5f0; --texte-doux: #a9bdb0;
+  --accent: #2fb36b; --accent-fonce: #0f5132; --danger: #e5484d; --rayon: 14px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; background: var(--fond); color: var(--texte);
+  font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; border: 0; border-radius: var(--rayon); padding: 12px 16px; background: var(--surface-2); cursor: pointer; }
+button.principal { background: var(--accent); color: #04140b; font-weight: 600; }
+button.danger { background: transparent; color: var(--danger); }
+button:disabled { opacity: .5; }
+button[aria-pressed=true] { background: var(--accent); color: #04140b; }
+input[type=search], input[type=text] { font: inherit; width: 100%; padding: 12px 14px; border-radius: var(--rayon);
+  border: 1px solid var(--surface-2); background: var(--surface); color: var(--texte); }
+.ecran { min-height: 100dvh; padding: calc(env(safe-area-inset-top) + 12px) 16px calc(env(safe-area-inset-bottom) + 96px);
+  display: flex; flex-direction: column; gap: 12px; }
+.ecran h2 { font-size: 15px; margin: 8px 0 0; color: var(--texte-doux); font-weight: 500; }
+.entete { display: flex; align-items: center; gap: 8px; }
+.entete h1 { font-size: 22px; margin: 0; flex: 1; }
+.liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.liste li button { width: 100%; display: flex; gap: 12px; align-items: center; text-align: left; background: var(--surface); padding: 8px; }
+.vignette { width: 56px; height: 72px; object-fit: cover; border-radius: 6px; background: var(--surface-2); flex: none; }
+.doux { color: var(--texte-doux); font-size: 14px; }
+.barre-bas { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
+  display: flex; gap: 8px; background: linear-gradient(transparent, var(--fond) 30%); }
+.barre-bas > * { flex: 1; }
+.message { position: fixed; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 90px); background: var(--surface-2);
+  padding: 14px; border-radius: var(--rayon); box-shadow: 0 6px 24px #0008; z-index: 40; }
+.bandeau { position: fixed; top: env(safe-area-inset-top); left: 0; right: 0; border-radius: 0; background: var(--accent-fonce); z-index: 50; }
+.progression { height: 4px; background: var(--surface-2); border-radius: 2px; overflow: hidden; }
+.progression > div { height: 100%; background: var(--accent); transition: width .2s; }
+.progression.indeterminee > div { width: 30%; animation: aller 1.2s infinite ease-in-out; }
+.progression.haut { position: fixed; top: env(safe-area-inset-top); left: 0; right: 0; z-index: 10; border-radius: 0; }
+@keyframes aller { from { transform: translateX(-100%); } to { transform: translateX(330%); } }
+.plein { position: fixed; inset: 0; background: #000; display: flex; flex-direction: column; }
+.zone { position: relative; flex: 1; min-height: 0; touch-action: none; }
+.zone video, .zone img.scene { width: 100%; height: 100%; object-fit: contain; display: block; }
+.calque { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.calque-texte { position: absolute; left: 16px; right: 16px; bottom: 16px; background: #000b; padding: 12px; border-radius: 12px; text-align: center; }
+.commandes { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px); background: #000; }
+.commandes.colonne { flex-direction: column; align-items: stretch; }
+.ligne { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.declencheur { width: 72px; height: 72px; border-radius: 50%; background: #fff; border: 4px solid var(--accent); padding: 0; }
+.grille { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.grille .case { position: relative; background: var(--surface); border-radius: 8px; padding: 4px; }
+.grille img { width: 100%; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 6px; display: block; }
+.grille .numero { position: absolute; left: 8px; bottom: 8px; background: #000a; padding: 0 6px; border-radius: 6px; font-size: 13px; }
+.choix { display: flex; gap: 8px; overflow-x: auto; }
+.loupe { position: absolute; top: 12px; left: 12px; width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--accent); pointer-events: none; }
+.voile { position: fixed; inset: 0; background: #0008; z-index: 24; }
+.feuille-actions { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); z-index: 25;
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px); border-radius: 16px 16px 0 0; display: flex; flex-direction: column; gap: 8px; }

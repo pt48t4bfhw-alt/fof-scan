@@ -2,15 +2,21 @@ import type { ImageJpeg } from '../rangement/modele';
 import { dimensionsReduites } from '../traitement/geometrie';
 import type { Img } from '../traitement/types';
 
-/** Décode une image (Safari applique l'orientation EXIF des photos de l'iPhone). */
+/**
+ * Décode une image (Safari applique l'orientation EXIF des photos de l'iPhone).
+ * On attend `onload` et non `img.decode()` : quand la page est cachée, Chrome ne termine
+ * jamais `decode()`.
+ */
 export async function chargerImage(source: Blob | Uint8Array): Promise<HTMLImageElement> {
   const blob = source instanceof Blob ? source : new Blob([source], { type: 'image/jpeg' });
   const url = URL.createObjectURL(blob);
   try {
-    const img = new Image();
-    img.src = url;
-    await img.decode();
-    return img;
+    return await new Promise<HTMLImageElement>((ok, ko) => {
+      const img = new Image();
+      img.onload = () => ok(img);
+      img.onerror = () => ko(new Error("Impossible de lire cette image."));
+      img.src = url;
+    });
   } finally {
     URL.revokeObjectURL(url);
   }

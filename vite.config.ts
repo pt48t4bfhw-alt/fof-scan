@@ -7,6 +7,9 @@ export default defineConfig(({ command }) => ({
   base: command === 'build' ? '/fof-scan/' : '/',
   plugins: [preact()],
   worker: { format: 'es' },
+  // Préparées dès le démarrage : sinon Vite les découvre en cours de route et recharge la page
+  // (avec, entre-temps, deux copies de Preact qui provoquent des erreurs « __H »).
+  optimizeDeps: { include: ['preact', 'preact/hooks', 'idb', 'fflate', 'pdf-lib', 'sortablejs', '@techstark/opencv-js'] },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
