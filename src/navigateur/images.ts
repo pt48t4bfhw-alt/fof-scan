@@ -1,0 +1,55 @@
+import type { ImageJpeg } from '../rangement/modele';
+import { dimensionsReduites } from '../traitement/geometrie';
+import type { Img } from '../traitement/types';
+
+/** Décode une image (Safari applique l'orientation EXIF des photos de l'iPhone). */
+export async function chargerImage(source: Blob | Uint8Array): Promise<HTMLImageElement> {
+  const blob = source instanceof Blob ? source : new Blob([source], { type: 'image/jpeg' });
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return img;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+export function versCanvas(source: CanvasImageSource, largeurSrc: number, hauteurSrc: number, coteMax: number): HTMLCanvasElement {
+  const { largeur, hauteur } = dimensionsReduites(largeurSrc, hauteurSrc, coteMax);
+  const c = document.createElement('canvas');
+  c.width = largeur;
+  c.height = hauteur;
+  c.getContext('2d')!.drawImage(source, 0, 0, largeur, hauteur);
+  return c;
+}
+
+export function lireImg(c: HTMLCanvasElement): Img {
+  const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height);
+  return { data: d.data, width: d.width, height: d.height };
+}
+
+export function imgVersCanvas(img: Img): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  c.getContext('2d')!.putImageData(new ImageData(img.data, img.width, img.height), 0, 0);
+  return c;
+}
+
+export async function canvasVersJpeg(c: HTMLCanvasElement, qualite: number): Promise<ImageJpeg> {
+  const blob = await new Promise<Blob>((ok, ko) =>
+    c.toBlob((b) => (b ? ok(b) : ko(new Error('Encodage JPEG impossible'))), 'image/jpeg', qualite));
+  return { octets: new Uint8Array(await blob.arrayBuffer()), largeur: c.width, hauteur: c.height };
+}
+
+export async function reencoder(im: ImageJpeg, coteMax: number, qualite: number): Promise<ImageJpeg> {
+  const img = await chargerImage(im.octets);
+  return canvasVersJpeg(versCanvas(img, img.naturalWidth, img.naturalHeight, coteMax), qualite);
+}
+
+/** Adresse temporaire pour afficher une image ; la libérer avec URL.revokeObjectURL. */
+export function urlImage(im: ImageJpeg): string {
+  return URL.createObjectURL(new Blob([im.octets], { type: 'image/jpeg' }));
+}
