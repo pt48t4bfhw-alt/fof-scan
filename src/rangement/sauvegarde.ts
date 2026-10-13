@@ -1,5 +1,5 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import type { DocumentScan, PageScan } from './modele';
+import type { DocumentScan, DossierScan, PageScan } from './modele';
 
 const VERSION = 1;
 const APPLICATION = 'FOF Scan';
@@ -13,8 +13,8 @@ export function nomSauvegarde(d: Date): string {
   return `FOF-Scan-sauvegarde-${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}.zip`;
 }
 
-/** Un zip : `manifeste.json` (documents et pages sans les images) + toutes les images JPEG. */
-export function creerSauvegarde(documents: DocumentScan[], pages: PageScan[]): Uint8Array {
+/** Un zip : `manifeste.json` (dossiers, documents et pages sans les images) + toutes les images JPEG. */
+export function creerSauvegarde(documents: DocumentScan[], pages: PageScan[], dossiers: DossierScan[] = []): Uint8Array {
   const fichiers: Record<string, Uint8Array> = {};
   const pagesManifeste = pages.map((p) => {
     const copie: Record<string, unknown> = { ...p };
@@ -24,12 +24,12 @@ export function creerSauvegarde(documents: DocumentScan[], pages: PageScan[]): U
     }
     return copie;
   });
-  fichiers['manifeste.json'] = strToU8(JSON.stringify({ application: APPLICATION, version: VERSION, documents, pages: pagesManifeste }));
+  fichiers['manifeste.json'] = strToU8(JSON.stringify({ application: APPLICATION, version: VERSION, dossiers, documents, pages: pagesManifeste }));
   // Les JPEG ne se compressent plus : on range sans compresser, c'est plus rapide.
   return zipSync(fichiers, { level: 0 });
 }
 
-export function lireSauvegarde(zip: Uint8Array): { documents: DocumentScan[]; pages: PageScan[] } {
+export function lireSauvegarde(zip: Uint8Array): { documents: DocumentScan[]; pages: PageScan[]; dossiers: DossierScan[] } {
   let fichiers: Record<string, Uint8Array>;
   try {
     fichiers = unzipSync(zip);
@@ -50,5 +50,6 @@ export function lireSauvegarde(zip: Uint8Array): { documents: DocumentScan[]; pa
     }
     return page as unknown as PageScan;
   });
-  return { documents: manifeste.documents, pages };
+  // les sauvegardes faites avant les dossiers n'en ont pas
+  return { documents: manifeste.documents, pages, dossiers: manifeste.dossiers ?? [] };
 }

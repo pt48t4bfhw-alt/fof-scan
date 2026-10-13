@@ -24,6 +24,10 @@ input[type=search], input[type=text] { font: inherit; width: 100%; padding: 12px
 /* pas de menu « copier / partager » de l'iPhone sur l'appui long qui sert à cocher */
 .liste li button { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .liste li button[aria-pressed=true] { background: var(--surface-2); color: var(--texte); outline: 2px solid var(--accent); }
+.icone-dossier { display: flex; align-items: center; justify-content: center; font-size: 30px; }
+.barre-bas.compacte { gap: 6px; }
+.barre-bas.compacte button { padding: 12px 6px; font-size: 14px; }
+.ligne input[type=search] { flex: 1; min-width: 0; }
 .case-a-cocher { width: 26px; height: 26px; flex: none; border-radius: 50%; border: 2px solid var(--texte-doux);
   display: flex; align-items: center; justify-content: center; font-weight: 700; color: #04140b; }
 .case-a-cocher.cochee { background: var(--accent); border-color: var(--accent); }

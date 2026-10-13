@@ -12,7 +12,9 @@ import { messageErreur, type Nav } from './navigation';
 
 const COTE_APERCU = 480;
 
-export function Viseur({ documentId, nav, outilPret }: { documentId: string | null; nav: Nav; outilPret: boolean }) {
+export function Viseur({ documentId, dossierId = null, nav, outilPret }: {
+  documentId: string | null; dossierId?: string | null; nav: Nav; outilPret: boolean;
+}) {
   const video = useRef<HTMLVideoElement>(null);
   const entreeImport = useRef<HTMLInputElement>(null);
   const declencheur = useRef<DeclencheurAuto | null>(null);
@@ -76,16 +78,16 @@ export function Viseur({ documentId, nav, outilPret }: { documentId: string | nu
   }, []);
 
   function terminer() {
-    if (brouillons.length) nav.aller({ nom: 'recadrage', lot: { documentId, brouillons, pageExistante: null } });
+    if (brouillons.length) nav.aller({ nom: 'recadrage', lot: { documentId, dossierId, brouillons, pageExistante: null } });
   }
 
   function annuler() {
-    nav.aller(documentId ? { nom: 'document', id: documentId } : { nom: 'accueil' });
+    nav.aller(documentId ? { nom: 'document', id: documentId } : { nom: 'accueil', dossierId });
   }
 
   async function importer(fichiers: File[]) {
     try {
-      const lot = await importerFichiers(fichiers, documentId);
+      const lot = await importerFichiers(fichiers, documentId, dossierId);
       nav.aller({ nom: 'recadrage', lot: { ...lot, brouillons: [...brouillons, ...lot.brouillons] } });
     } catch (e) {
       nav.signaler(messageErreur(e));

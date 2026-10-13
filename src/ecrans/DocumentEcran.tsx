@@ -79,7 +79,7 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
   async function supprimerDocument() {
     if (!doc || !confirm(`Supprimer « ${doc.nom} » et toutes ses pages ?`)) return;
     await depot.supprimerDocument(id);
-    nav.aller({ nom: 'accueil' });
+    nav.aller({ nom: 'accueil', dossierId: doc.dossierId ?? null });
   }
 
   function modifierPage(p: PageScan) {
@@ -109,7 +109,7 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
   return (
     <main class="ecran">
       <header class="entete">
-        <button aria-label="Retour" onClick={() => nav.aller({ nom: 'accueil' })}>‹</button>
+        <button aria-label="Retour" onClick={() => nav.aller({ nom: 'accueil', dossierId: doc?.dossierId ?? null })}>‹</button>
         <input type="text" value={nom} aria-label="Nom du document"
           onInput={(e) => setNom(e.currentTarget.value)} onBlur={renommer}
           onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />

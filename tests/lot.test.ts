@@ -27,6 +27,13 @@ describe('enregistrerLot', () => {
     expect(progres).toEqual([1, 2]);
   });
 
+  it('scanné depuis un dossier, le nouveau document y est rangé', async () => {
+    const d = await depotNeuf();
+    const dossier = await d.creerDossier('Reçus');
+    const id = await enregistrerLot(d, { documentId: null, dossierId: dossier.id, brouillons: [brouillon(10)], pageExistante: null }, rendre, new Date());
+    expect((await d.lireDocument(id))!.dossierId).toBe(dossier.id);
+  });
+
   it('ajoute les pages à un document existant', async () => {
     const d = await depotNeuf();
     const doc = await d.creerDocument('Fiche');

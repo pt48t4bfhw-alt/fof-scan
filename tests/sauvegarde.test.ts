@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { zipSync } from 'fflate';
+import { strToU8, zipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
 import { ouvrirDepot } from '../src/rangement/depot';
 import { creerSauvegarde, lireSauvegarde, nomSauvegarde } from '../src/rangement/sauvegarde';
@@ -10,21 +10,31 @@ describe('sauvegarde', () => {
     expect(nomSauvegarde(new Date(2026, 9, 5))).toBe('FOF-Scan-sauvegarde-2026-10-05.zip');
   });
 
-  it('sauvegarde puis restaure dans un autre dépôt : tout est identique', async () => {
+  it('sauvegarde puis restaure dans un autre dépôt : tout est identique, dossiers compris', async () => {
     const source = await ouvrirDepot(`s-${crypto.randomUUID()}`);
-    const doc = await source.creerDocument('Bordereau');
+    const dossier = await source.creerDossier('Bordereaux');
+    const doc = await source.creerDocument('Bordereau', dossier.id);
     await source.ajouterPage(doc.id, pageFactice(30));
     await source.ajouterPage(doc.id, pageFactice(90));
+    await source.creerDocument('Hors dossier');
     const avant = await source.toutLire();
 
-    const relu = lireSauvegarde(creerSauvegarde(avant.documents, avant.pages));
+    const relu = lireSauvegarde(creerSauvegarde(avant.documents, avant.pages, avant.dossiers));
     const cible = await ouvrirDepot(`c-${crypto.randomUUID()}`);
-    await cible.importer(relu.documents, relu.pages);
+    await cible.importer(relu.documents, relu.pages, relu.dossiers);
 
     const apres = await cible.toutLire();
-    expect(apres.documents).toEqual(avant.documents);
-    const parId = (l: typeof apres.pages) => [...l].sort((a, b) => a.id.localeCompare(b.id));
+    const parId = <T extends { id: string }>(l: T[]) => [...l].sort((a, b) => a.id.localeCompare(b.id));
+    expect(parId(apres.documents)).toEqual(parId(avant.documents));
     expect(parId(apres.pages)).toEqual(parId(avant.pages));
+    expect(apres.dossiers).toEqual(avant.dossiers);
+  });
+
+  it('une sauvegarde de l\'ancienne version (sans dossiers) se relit', () => {
+    const ancien = zipSync({
+      'manifeste.json': strToU8(JSON.stringify({ application: 'FOF Scan', version: 1, documents: [], pages: [] })),
+    });
+    expect(lireSauvegarde(ancien)).toEqual({ documents: [], pages: [], dossiers: [] });
   });
 
   it('refuse un fichier qui n\'est pas une sauvegarde', () => {

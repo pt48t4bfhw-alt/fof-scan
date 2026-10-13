@@ -22,7 +22,8 @@ describe('navigation', () => {
     const page = { documentId: 'p' } as PageScan;
     expect(retour({ documentId: null, brouillons: [], pageExistante: page })).toEqual({ nom: 'document', id: 'p' });
     expect(retour({ documentId: 'd', brouillons: [], pageExistante: null })).toEqual({ nom: 'document', id: 'd' });
-    expect(retour({ documentId: null, brouillons: [], pageExistante: null })).toEqual({ nom: 'accueil' });
+    expect(retour({ documentId: null, brouillons: [], pageExistante: null })).toEqual({ nom: 'accueil', dossierId: null });
+    expect(retour({ documentId: null, dossierId: 'r', brouillons: [], pageExistante: null })).toEqual({ nom: 'accueil', dossierId: 'r' });
   });
 
   it('messageErreur : un message clair pour la mémoire pleine', () => {

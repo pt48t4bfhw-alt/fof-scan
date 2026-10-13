@@ -1,12 +1,21 @@
 import { ErreurStockagePlein } from '../rangement/depot';
 import type { PageBrouillon, PageScan } from '../rangement/modele';
 
-/** Pages en cours : nouveau scan (documentId null = nouveau document) ou modification d'une page existante. */
-export interface Lot { documentId: string | null; brouillons: PageBrouillon[]; pageExistante: PageScan | null }
+/**
+ * Pages en cours : nouveau scan (documentId null = nouveau document, rangé dans `dossierId`)
+ * ou modification d'une page existante.
+ */
+export interface Lot {
+  documentId: string | null;
+  dossierId?: string | null;
+  brouillons: PageBrouillon[];
+  pageExistante: PageScan | null;
+}
 
 export type Ecran =
-  | { nom: 'accueil' }
-  | { nom: 'viseur'; documentId: string | null }
+  /** L'accueil, ou l'intérieur d'un dossier. */
+  | { nom: 'accueil'; dossierId?: string | null }
+  | { nom: 'viseur'; documentId: string | null; dossierId?: string | null }
   | { nom: 'recadrage'; lot: Lot }
   | { nom: 'filtres'; lot: Lot }
   | { nom: 'document'; id: string }
@@ -18,7 +27,7 @@ export interface Nav { aller(e: Ecran): void; signaler(message: string): void }
 export function retour(lot: Lot): Ecran {
   if (lot.pageExistante) return { nom: 'document', id: lot.pageExistante.documentId };
   if (lot.documentId) return { nom: 'document', id: lot.documentId };
-  return { nom: 'accueil' };
+  return { nom: 'accueil', dossierId: lot.dossierId ?? null };
 }
 
 export function messageErreur(e: unknown): string {

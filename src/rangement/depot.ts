@@ -1,9 +1,10 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
-import type { DocumentScan, NouvellePage, PageScan } from './modele';
+import type { DocumentScan, DossierScan, NouvellePage, PageScan } from './modele';
 
 interface Schema extends DBSchema {
   documents: { key: string; value: DocumentScan };
   pages: { key: string; value: PageScan; indexes: { parDocument: string } };
+  dossiers: { key: string; value: DossierScan };
 }
 
 export class ErreurStockagePlein extends Error {
@@ -27,10 +28,14 @@ async function proteger<T>(f: () => Promise<T>): Promise<T> {
 }
 
 export async function ouvrirDepot(nomBase = 'fof-scan', horloge: () => number = Date.now): Promise<Depot> {
-  const db = await openDB<Schema>(nomBase, 1, {
-    upgrade(base) {
-      base.createObjectStore('documents', { keyPath: 'id' });
-      base.createObjectStore('pages', { keyPath: 'id' }).createIndex('parDocument', 'documentId');
+  // Version 2 : ajout des dossiers. Une mémoire de la version 1 garde ses documents (hors dossier).
+  const db = await openDB<Schema>(nomBase, 2, {
+    upgrade(base, ancienneVersion) {
+      if (ancienneVersion < 1) {
+        base.createObjectStore('documents', { keyPath: 'id' });
+        base.createObjectStore('pages', { keyPath: 'id' }).createIndex('parDocument', 'documentId');
+      }
+      if (ancienneVersion < 2) base.createObjectStore('dossiers', { keyPath: 'id' });
     },
   });
   return new Depot(db, horloge);
@@ -47,10 +52,52 @@ export class Depot {
     return this.db.get('documents', id);
   }
 
-  creerDocument(nom: string): Promise<DocumentScan> {
+  creerDocument(nom: string, dossierId: string | null = null): Promise<DocumentScan> {
     const t = this.horloge();
-    const doc: DocumentScan = { id: crypto.randomUUID(), nom, cree: t, modifie: t, pages: [] };
+    const doc: DocumentScan = { id: crypto.randomUUID(), nom, cree: t, modifie: t, pages: [], dossierId };
     return proteger(async () => { await this.db.put('documents', doc); return doc; });
+  }
+
+  // --- dossiers ---
+
+  async listerDossiers(): Promise<DossierScan[]> {
+    return (await this.db.getAll('dossiers')).sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base' }));
+  }
+
+  creerDossier(nom: string): Promise<DossierScan> {
+    const dossier: DossierScan = { id: crypto.randomUUID(), nom, cree: this.horloge() };
+    return proteger(async () => { await this.db.put('dossiers', dossier); return dossier; });
+  }
+
+  async renommerDossier(id: string, nom: string): Promise<void> {
+    await proteger(async () => {
+      const tx = this.db.transaction('dossiers', 'readwrite');
+      const d = await tx.store.get(id);
+      if (!d) throw new Error('Dossier introuvable');
+      await Promise.all([tx.store.put({ ...d, nom }), tx.done]);
+    });
+  }
+
+  /** Supprime le dossier ; ses documents reviennent à l'accueil (aucun document n'est perdu). */
+  async supprimerDossier(id: string): Promise<void> {
+    const tx = this.db.transaction(['dossiers', 'documents'], 'readwrite');
+    for (const doc of await tx.objectStore('documents').getAll()) {
+      if (doc.dossierId === id) await tx.objectStore('documents').put({ ...doc, dossierId: null });
+    }
+    await tx.objectStore('dossiers').delete(id);
+    await tx.done;
+  }
+
+  /** Range des documents dans un dossier (ou à l'accueil avec null). */
+  async deplacer(ids: string[], dossierId: string | null): Promise<void> {
+    await proteger(async () => {
+      const tx = this.db.transaction('documents', 'readwrite');
+      for (const id of ids) {
+        const doc = await tx.store.get(id);
+        if (doc) await tx.store.put({ ...doc, dossierId });
+      }
+      await tx.done;
+    });
   }
 
   renommer(id: string, nom: string): Promise<void> {
@@ -155,18 +202,30 @@ export class Depot {
     return cibleId;
   }
 
-  async toutLire(): Promise<{ documents: DocumentScan[]; pages: PageScan[] }> {
-    return { documents: await this.db.getAll('documents'), pages: await this.db.getAll('pages') };
+  async toutLire(): Promise<{ documents: DocumentScan[]; pages: PageScan[]; dossiers: DossierScan[] }> {
+    return {
+      documents: await this.db.getAll('documents'),
+      pages: await this.db.getAll('pages'),
+      dossiers: await this.db.getAll('dossiers'),
+    };
   }
 
-  async importer(documents: DocumentScan[], pages: PageScan[]): Promise<{ ajoutes: number; ignores: number }> {
+  /**
+   * Restauration : ajoute les dossiers et documents absents (rien n'est dupliqué). Un document
+   * dont le dossier n'existe ni ici ni dans la sauvegarde revient à l'accueil.
+   */
+  async importer(documents: DocumentScan[], pages: PageScan[], dossiers: DossierScan[] = []): Promise<{ ajoutes: number; ignores: number }> {
     let ajoutes = 0;
     let ignores = 0;
     await proteger(async () => {
-      const tx = this.db.transaction(['documents', 'pages'], 'readwrite');
+      const tx = this.db.transaction(['documents', 'pages', 'dossiers'], 'readwrite');
+      for (const dossier of dossiers) {
+        if (!(await tx.objectStore('dossiers').get(dossier.id))) await tx.objectStore('dossiers').put(dossier);
+      }
       for (const doc of documents) {
         if (await tx.objectStore('documents').get(doc.id)) { ignores++; continue; }
-        await tx.objectStore('documents').put(doc);
+        const dossierConnu = !doc.dossierId || (await tx.objectStore('dossiers').get(doc.dossierId));
+        await tx.objectStore('documents').put(dossierConnu ? doc : { ...doc, dossierId: null });
         for (const p of pages.filter((x) => x.documentId === doc.id)) await tx.objectStore('pages').put(p);
         ajoutes++;
       }

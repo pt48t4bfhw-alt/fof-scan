@@ -38,8 +38,8 @@ export function App() {
       {!outilPret && ecran.nom === 'accueil' && <div class="progression indeterminee haut"><div /></div>}
       {!depot ? <main class="ecran"><p class="doux">Chargement…</p></main> : (
         <>
-          {ecran.nom === 'accueil' && <Accueil depot={depot} nav={nav} />}
-          {ecran.nom === 'viseur' && <Viseur documentId={ecran.documentId} nav={nav} outilPret={outilPret} />}
+          {ecran.nom === 'accueil' && <Accueil key={ecran.dossierId ?? 'racine'} depot={depot} nav={nav} dossierId={ecran.dossierId ?? null} />}
+          {ecran.nom === 'viseur' && <Viseur documentId={ecran.documentId} dossierId={ecran.dossierId ?? null} nav={nav} outilPret={outilPret} />}
           {ecran.nom === 'recadrage' && <Recadrage lot={ecran.lot} nav={nav} />}
           {ecran.nom === 'filtres' && <Filtres lot={ecran.lot} depot={depot} nav={nav} />}
           {ecran.nom === 'document' && <DocumentEcran id={ecran.id} depot={depot} nav={nav} />}

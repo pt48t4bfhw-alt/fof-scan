@@ -7,7 +7,12 @@ export interface DocumentScan {
   modifie: number;
   /** Identifiants des pages, dans l'ordre. */
   pages: string[];
+  /** Dossier qui le contient ; absent ou null = à l'accueil, hors dossier. */
+  dossierId?: string | null;
 }
+
+/** Un dossier de l'accueil (un seul niveau : pas de dossier dans un dossier). */
+export interface DossierScan { id: string; nom: string; cree: number }
 
 export interface ImageJpeg { octets: Uint8Array; largeur: number; hauteur: number }
 

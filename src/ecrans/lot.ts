@@ -17,7 +17,7 @@ export async function enregistrerLot(
     progres?.(1, 1);
     return lot.pageExistante.documentId;
   }
-  const id = lot.documentId ?? (await depot.creerDocument(nomParDefaut(maintenant))).id;
+  const id = lot.documentId ?? (await depot.creerDocument(nomParDefaut(maintenant), lot.dossierId ?? null)).id;
   for (const [k, b] of lot.brouillons.entries()) {
     await depot.ajouterPage(id, await rendre(b));
     progres?.(k + 1, lot.brouillons.length);

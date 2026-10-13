@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto';
+import { openDB } from 'idb';
 import { describe, expect, it } from 'vitest';
 import { ErreurStockagePlein, estErreurQuota, ouvrirDepot } from '../src/rangement/depot';
 import { pageFactice } from './aides/jpeg';
@@ -63,15 +64,16 @@ describe('Depot', () => {
     expect(await d.lirePage(p2.id)).toBeUndefined();
   });
 
-  it('importe sans dupliquer un document déjà présent', async () => {
+  it('importe sans dupliquer un document déjà présent, dossiers compris', async () => {
     const source = await depotNeuf();
-    const doc = await source.creerDocument('Fiche');
+    const dossier = await source.creerDossier('Reçus');
+    const doc = await source.creerDocument('Fiche', dossier.id);
     await source.ajouterPage(doc.id, pageFactice());
-    const { documents, pages } = await source.toutLire();
+    const { documents, pages, dossiers } = await source.toutLire();
     const cible = await depotNeuf();
-    expect(await cible.importer(documents, pages)).toEqual({ ajoutes: 1, ignores: 0 });
-    expect(await cible.importer(documents, pages)).toEqual({ ajoutes: 0, ignores: 1 });
-    expect(await cible.toutLire()).toEqual({ documents, pages });
+    expect(await cible.importer(documents, pages, dossiers)).toEqual({ ajoutes: 1, ignores: 0 });
+    expect(await cible.importer(documents, pages, dossiers)).toEqual({ ajoutes: 0, ignores: 1 });
+    expect(await cible.toutLire()).toEqual({ documents, pages, dossiers });
   });
 
   it('fusionne plusieurs documents dans le premier coché, dans l\'ordre où ils ont été cochés', async () => {
@@ -96,6 +98,54 @@ describe('Depot', () => {
     const d = await depotNeuf();
     const a = await d.creerDocument('A');
     await expect(d.fusionner([a.id])).rejects.toThrow('au moins deux');
+  });
+
+  it('crée, renomme et liste les dossiers (par nom)', async () => {
+    const d = await depotNeuf();
+    const b = await d.creerDossier('SCOOPAB');
+    await d.creerDossier('Banque');
+    await d.renommerDossier(b.id, 'SCOOPAB 2026');
+    expect((await d.listerDossiers()).map((x) => x.nom)).toEqual(['Banque', 'SCOOPAB 2026']);
+  });
+
+  it('crée un document directement dans un dossier, et déplace des documents', async () => {
+    const d = await depotNeuf();
+    const dossier = await d.creerDossier('Reçus');
+    const a = await d.creerDocument('A', dossier.id);
+    const b = await d.creerDocument('B');
+    expect((await d.lireDocument(a.id))!.dossierId).toBe(dossier.id);
+    expect((await d.lireDocument(b.id))!.dossierId ?? null).toBeNull();
+    await d.deplacer([b.id], dossier.id);
+    expect((await d.lireDocument(b.id))!.dossierId).toBe(dossier.id);
+    await d.deplacer([a.id], null);
+    expect((await d.lireDocument(a.id))!.dossierId).toBeNull();
+  });
+
+  it('supprimer un dossier ramène ses documents à l\'accueil, sans rien perdre', async () => {
+    const d = await depotNeuf();
+    const dossier = await d.creerDossier('Reçus');
+    const a = await d.creerDocument('A', dossier.id);
+    await d.ajouterPage(a.id, pageFactice());
+    await d.supprimerDossier(dossier.id);
+    expect(await d.listerDossiers()).toEqual([]);
+    const relu = await d.lireDocument(a.id);
+    expect(relu!.dossierId).toBeNull();
+    expect(relu!.pages).toHaveLength(1);
+  });
+
+  it('une mémoire de l\'ancienne version (sans dossiers) s\'ouvre sans perte', async () => {
+    const nom = `ancien-${crypto.randomUUID()}`;
+    const ancien = await openDB(nom, 1, {
+      upgrade(base) {
+        base.createObjectStore('documents', { keyPath: 'id' });
+        base.createObjectStore('pages', { keyPath: 'id' }).createIndex('parDocument', 'documentId');
+      },
+    });
+    await ancien.put('documents', { id: 'x', nom: 'Vieux scan', cree: 1, modifie: 1, pages: [] });
+    ancien.close();
+    const d = await ouvrirDepot(nom);
+    expect((await d.listerDocuments()).map((x) => x.nom)).toEqual(['Vieux scan']);
+    expect(await d.listerDossiers()).toEqual([]);
   });
 
   it('reconnaît une erreur de mémoire pleine', () => {
