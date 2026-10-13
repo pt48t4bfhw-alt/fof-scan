@@ -29,8 +29,9 @@ export default defineConfig(({ command, isPreview }) => ({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,png,wasm}'],
-        // OpenCV pèse environ 10 Mo : sans cette limite, il ne serait pas gardé pour le hors-ligne.
+        // onnx : le modèle DocAligner ; wasm : le moteur onnxruntime
+        globPatterns: ['**/*.{js,mjs,css,html,png,wasm,onnx}'],
+        // OpenCV (~10 Mo) et le moteur onnxruntime (~14 Mo) : sans cette limite, ils ne seraient pas gardés hors ligne.
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
       },
     }),
@@ -38,7 +39,11 @@ export default defineConfig(({ command, isPreview }) => ({
   worker: { format: 'es' },
   // Préparées dès le démarrage : sinon Vite les découvre en cours de route et recharge la page
   // (avec, entre-temps, deux copies de Preact qui provoquent des erreurs « __H »).
-  optimizeDeps: { include: ['preact', 'preact/hooks', 'idb', 'fflate', 'pdf-lib', 'sortablejs', '@techstark/opencv-js'] },
+  optimizeDeps: {
+    include: ['preact', 'preact/hooks', 'idb', 'fflate', 'pdf-lib', 'sortablejs', '@techstark/opencv-js'],
+    // onnxruntime-web charge lui-même son moteur .wasm : Vite ne doit pas le réempaqueter
+    exclude: ['onnxruntime-web'],
+  },
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],

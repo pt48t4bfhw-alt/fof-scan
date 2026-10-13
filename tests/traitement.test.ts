@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { chargerOpenCV, type CV } from '../src/traitement/opencv';
-import { gererRequete } from '../src/traitement/coeur';
+import { gererDetection, gererRequete } from '../src/traitement/coeur';
 import { Traitement } from '../src/traitement/client';
 import type { PortWorker, Reponse, Requete } from '../src/traitement/protocole';
 import { REGLAGES_NEUTRES, type Coins } from '../src/traitement/types';
@@ -42,6 +42,24 @@ describe('gererRequete', () => {
     const r = gererRequete(cv, { id: 3, type: 'detecter', img: casse });
     expect(r.ok).toBe(false);
     expect(r.id).toBe(3);
+  });
+});
+
+describe('gererDetection (IA d\'abord, méthode classique en repli)', () => {
+  const coinsIA: Coins = [{ x: 1, y: 2 }, { x: 3, y: 4 }, { x: 5, y: 6 }, { x: 7, y: 8 }];
+  const ia = (reponse: () => Promise<Coins | null>) => ({ detecter: reponse });
+
+  it('prend les coins de l\'IA quand elle en trouve', async () => {
+    const r = await gererDetection(cv, ia(async () => coinsIA), { id: 1, type: 'detecter', img: scene() });
+    expect(r.ok && r.type === 'detecter' && r.coins).toEqual(coinsIA);
+  });
+
+  it('passe à la méthode classique quand l\'IA renonce, échoue ou n\'est pas chargée', async () => {
+    for (const detecteur of [ia(async () => null), ia(async () => { throw new Error('moteur'); }), null]) {
+      const r = await gererDetection(cv, detecteur, { id: 2, type: 'detecter', img: scene() });
+      if (!r.ok || r.type !== 'detecter' || !r.coins) throw new Error('la méthode classique aurait dû trouver la feuille');
+      r.coins.forEach((p, i) => expect(Math.hypot(p.x - vrais[i].x, p.y - vrais[i].y)).toBeLessThan(10));
+    }
   });
 });
 

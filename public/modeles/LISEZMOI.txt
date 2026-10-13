@@ -1,0 +1,10 @@
+docaligner-lc100.onnx
+=====================
+
+Modèle de détection des 4 coins d'un document, non modifié :
+  - projet : DocAligner, DocsaidLab — https://github.com/DocsaidLab/DocAligner
+  - fichier d'origine : lcnet100_h_e_bifpn_256_fp32.onnx (configuration « lcnet100 », type « heatmap »)
+  - licence : Apache License 2.0 (texte complet dans LICENCE-DocAligner.txt)
+  - SHA-256 : F4117B786E3A18470F3865C93F3C2BD69D9B998EDD60F385574A5C665E79594E
+
+Utilisé par FOF Scan pour trouver la feuille dans la photo, sur le téléphone, sans internet.
