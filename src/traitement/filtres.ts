@@ -20,17 +20,29 @@ export function appliquerFiltre(cv: CV, img: Img, filtre: Filtre): Img {
       cv.cvtColor(src, g, cv.COLOR_RGBA2GRAY);
       const propre = garder(sansOmbre(cv, g));
       cv.GaussianBlur(propre, propre, new cv.Size(3, 3), 0);
+      const cote = Math.max(img.width, img.height);
+      // Seuil local : un texte gris clair (imprimé pâle, reflet) reste noir à côté du papier.
       const binaire = nouvelle();
-      // le fond étant aplani, un seuil unique (Otsu) sépare proprement l'encre du papier
-      cv.threshold(propre, binaire, 0, 255, cv.THRESH_BINARY + cv.THRESH_OTSU);
+      const bloc = Math.max(15, Math.round(cote / 40)) | 1;
+      cv.adaptiveThreshold(propre, binaire, 255, cv.ADAPTIVE_THRESH_MEAN_C, cv.THRESH_BINARY, bloc, 16);
+      // Le papier très clair reste blanc (pas de grain)…
+      const clair = nouvelle();
+      cv.threshold(propre, clair, 238, 255, cv.THRESH_BINARY);
+      cv.bitwise_or(binaire, clair, binaire);
+      // …et les grandes zones foncées (boutons, gros titres) restent pleines.
+      const pasSombre = nouvelle();
+      cv.threshold(propre, pasSombre, 110, 255, cv.THRESH_BINARY);
+      cv.bitwise_and(binaire, pasSombre, binaire);
+      cv.medianBlur(binaire, binaire, cote > 2000 ? 5 : 3);
       return versImg(cv, binaire);
     }
-    // 'ameliore' : on retire l'ombre canal par canal pour garder les couleurs, puis on blanchit le papier
+    // 'ameliore' : on retire l'ombre canal par canal pour garder les couleurs, on blanchit doucement
+    // le papier (sans effacer le texte pâle), puis on renforce la netteté.
     const rgb = nouvelle();
     cv.cvtColor(src, rgb, cv.COLOR_RGBA2RGB);
     const canaux = new cv.MatVector();
     const sortie = new cv.MatVector();
-    const lut = garder(courbe(cv, 235, 1.8));
+    const lut = garder(courbe(cv, 248, 1.3));
     try {
       cv.split(rgb, canaux);
       for (let i = 0; i < 3; i++) {
@@ -41,7 +53,12 @@ export function appliquerFiltre(cv: CV, img: Img, filtre: Filtre): Img {
       }
       const fusion = nouvelle();
       cv.merge(sortie, fusion);
-      return versImg(cv, fusion);
+      // Netteté (masque flou) : flou proportionnel à la taille de la page.
+      const flou = nouvelle();
+      cv.GaussianBlur(fusion, flou, new cv.Size(0, 0), Math.max(1, Math.max(img.width, img.height) / 740));
+      const net = nouvelle();
+      cv.addWeighted(fusion, 1.8, flou, -0.8, 0, net);
+      return versImg(cv, net);
     } finally {
       canaux.delete();
       sortie.delete();

@@ -49,6 +49,16 @@ describe('appliquerFiltre', () => {
     }
   });
 
+  it('noir & blanc : un texte gris clair (imprimé pâle, reflet) reste visible à côté d\'un texte noir', () => {
+    const img = imageUnie(600, 400, 220);
+    for (const x of [100, 130, 160]) remplirPolygone(img, [{ x, y: 80 }, { x: x + 6, y: 80 }, { x: x + 6, y: 140 }, { x, y: 140 }], 30);
+    for (const x of [100, 130, 160]) remplirPolygone(img, [{ x, y: 240 }, { x: x + 6, y: 240 }, { x: x + 6, y: 300 }, { x, y: 300 }], 165);
+    const sortie = appliquerFiltre(cv, img, 'nb');
+    expect(lireGris(sortie, 103, 110), 'texte noir').toBe(0);
+    expect(lireGris(sortie, 103, 270), 'texte gris clair').toBe(0);
+    expect(lireGris(sortie, 400, 200), 'papier').toBe(255);
+  });
+
   it('amélioré : l\'ombre disparaît, l\'écriture reste sombre', () => {
     const sortie = appliquerFiltre(cv, papierOmbre(), 'ameliore');
     expect(lireGris(sortie, 20, 30)).toBeGreaterThan(230);
