@@ -1,8 +1,10 @@
 import { nomFichier, nomsUniques } from '../nommage';
 import type { DocumentScan, ImageJpeg, PageScan } from '../rangement/modele';
-import { fabriquerPdf, type FormatPdf } from './pdf';
+import { fabriquerPdf, type MiseEnPage } from './pdf';
 
-export interface OptionsExport { type: 'pdf' | 'jpg'; format: FormatPdf; qualite: 'normale' | 'legere' }
+export interface OptionsExport extends MiseEnPage { type: 'pdf' | 'jpg'; qualite: 'normale' | 'legere' }
+
+export const OPTIONS_PAR_DEFAUT: OptionsExport = { type: 'pdf', format: 'a4', orientation: 'auto', marge: 'aucune', qualite: 'normale' };
 
 export const QUALITES = {
   normale: { coteMax: 2480, qualite: 0.85 },
@@ -48,7 +50,7 @@ export async function preparerExport(
     progres?.(k + 1, pages.length);
   }
   if (options.type === 'pdf') {
-    const pdf = await fabriquerPdf(images, options.format, doc.nom);
+    const pdf = await fabriquerPdf(images, options, doc.nom);
     return [new File([pdf], nomFichier(doc.nom, 'pdf'), { type: 'application/pdf' })];
   }
   return images.map((im, k) => new File(

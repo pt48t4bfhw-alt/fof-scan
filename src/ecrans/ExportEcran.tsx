@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import { preparerExportPlusieurs, type OptionsExport } from '../export/preparer';
+import { OPTIONS_PAR_DEFAUT, preparerExportPlusieurs, type OptionsExport } from '../export/preparer';
 import { reencoder } from '../navigateur/images';
 import { ecrirePreference, lirePreference } from '../navigateur/preferences';
 import type { Depot } from '../rangement/depot';
@@ -7,12 +7,13 @@ import type { DocumentScan } from '../rangement/modele';
 import { FichierPret } from './FichierPret';
 import { messageErreur, type Nav } from './navigation';
 
-const PAR_DEFAUT: OptionsExport = { type: 'pdf', format: 'a4', qualite: 'normale' };
+/** Choix retenus ; une préférence enregistrée avant l'orientation et les marges reçoit leurs valeurs par défaut. */
+const optionsRetenues = (): OptionsExport => ({ ...OPTIONS_PAR_DEFAUT, ...lirePreference<Partial<OptionsExport>>('export', {}) });
 
 /** Export d'un document, ou de plusieurs documents cochés sur l'accueil (un fichier par document). */
 export function ExportEcran({ ids, depot, nav }: { ids: string[]; depot: Depot; nav: Nav }) {
   const [docs, setDocs] = useState<DocumentScan[] | null>(null);
-  const [options, setOptions] = useState<OptionsExport>(() => lirePreference('export', PAR_DEFAUT));
+  const [options, setOptions] = useState<OptionsExport>(optionsRetenues);
   const [progres, setProgres] = useState<{ fait: number; total: number } | null>(null);
   const [pret, setPret] = useState<File[] | null>(null);
   const retour = () => nav.aller(ids.length === 1 ? { nom: 'document', id: ids[0] } : { nom: 'accueil' });
@@ -70,7 +71,15 @@ export function ExportEcran({ ids, depot, nav }: { ids: string[]; depot: Depot; 
       )}
       <h2>Type</h2>
       {choix('type', [['pdf', 'PDF'], ['jpg', 'Images JPG']])}
-      {options.type === 'pdf' && (<><h2>Format</h2>{choix('format', [['a4', 'A4'], ['reel', 'Taille réelle']])}</>)}
+      {options.type === 'pdf' && (
+        <>
+          <h2>Format de page</h2>
+          {choix('format', [['a4', 'A4'], ['a5', 'A5'], ['lettre', 'Lettre'], ['legal', 'Légal'], ['reel', 'Taille réelle']])}
+          {options.format !== 'reel' && (<><h2>Orientation</h2>{choix('orientation', [['auto', 'Auto'], ['portrait', 'Portrait'], ['paysage', 'Paysage']])}</>)}
+          <h2>Marges</h2>
+          {choix('marge', [['aucune', 'Aucune'], ['petite', 'Petite (1 cm)'], ['grande', 'Grande (2 cm)']])}
+        </>
+      )}
       <h2>Qualité</h2>
       {choix('qualite', [['normale', 'Normale'], ['legere', 'Légère (WhatsApp)']])}
       {progres ? (
