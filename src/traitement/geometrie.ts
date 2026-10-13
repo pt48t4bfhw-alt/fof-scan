@@ -60,6 +60,14 @@ export function deplacerCote(base: Coins, cote: number, depart: Point, actuel: P
     : p)) as Coins;
 }
 
+/**
+ * Coins d'une photo de hauteur `hauteur` tournée d'un quart de tour vers la droite :
+ * le point (x, y) devient (hauteur − y, x). L'ordre HG, HD, BD, BG est ensuite rétabli.
+ */
+export function tournerCoins(coins: Coins, hauteur: number): Coins {
+  return ordonnerCoins(coins.map((p) => ({ x: hauteur - p.y, y: p.x })));
+}
+
 export function coinsStables(a: Coins, b: Coins, diagonale: number, seuil = 0.02): boolean {
   return a.every((p, i) => dist(p, b[i]) <= seuil * diagonale);
 }

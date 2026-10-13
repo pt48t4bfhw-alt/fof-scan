@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks';
 import { rendrePage, traiterBrouillon } from '../navigateur/pipeline';
 import type { Depot } from '../rangement/depot';
 import type { PageBrouillon } from '../rangement/modele';
-import { REGLAGES_NEUTRES, estNeutre, type Filtre, type Reglages } from '../traitement/types';
+import { REGLAGES_NEUTRES, estNeutre, type Filtre, type Reglages, type Rotation } from '../traitement/types';
 import { enregistrerLot } from './lot';
 import { MODES } from './modes';
 import { messageErreur, type Lot, type Nav } from './navigation';
@@ -58,6 +58,9 @@ export function Filtres({ lot, depot, nav }: { lot: Lot; depot: Depot; nav: Nav 
   const modifier = (m: Partial<PageBrouillon>) => setBrouillons((l) => l.map((x, k) => (k === i ? { ...x, ...m } : x)));
   const changerReglage = (cle: keyof Reglages, valeur: number) =>
     setBrouillons((l) => l.map((x, k) => (k === i ? { ...x, reglages: { ...x.reglages, [cle]: valeur } } : x)));
+  /** Tourne la page d'un quart de tour ; part de l'angle à jour pour que les touchers rapides s'additionnent. */
+  const pivoter = () =>
+    setBrouillons((l) => l.map((x, k) => (k === i ? { ...x, rotation: ((x.rotation + 90) % 360) as Rotation } : x)));
   const pourToutes = () => setBrouillons((l) => l.map((x) => ({ ...x, filtre: b.filtre, reglages: b.reglages })));
 
   async function enregistrer() {
@@ -101,6 +104,7 @@ export function Filtres({ lot, depot, nav }: { lot: Lot; depot: Depot; nav: Nav 
         )}
         <div class="ligne">
           <button aria-pressed={reglagesOuverts} onClick={() => setReglagesOuverts(!reglagesOuverts)}>Réglages</button>
+          <button onClick={pivoter} aria-label="Tourner la page d'un quart de tour">↻</button>
           {brouillons.length > 1 && (
             <>
               <button onClick={() => setI(i - 1)} disabled={i === 0}>‹</button>

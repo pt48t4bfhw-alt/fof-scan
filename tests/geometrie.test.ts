@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DeclencheurAuto, SuiviStabilite, coinsPleineImage, coinsStables, deplacerCote, dimensionsReduites,
-  mettreAEchelle, milieuCote, ordonnerCoins, tailleRedressee,
+  mettreAEchelle, milieuCote, ordonnerCoins, tailleRedressee, tournerCoins,
 } from '../src/traitement/geometrie';
 import type { Coins } from '../src/traitement/types';
 
@@ -74,6 +74,21 @@ describe('poignées au milieu des côtés', () => {
     expect(dx0 * cote.x + dy0 * cote.y).toBeCloseTo(0);
     expect(apres[2]).toEqual(avant[2]);
     expect(apres[3]).toEqual(avant[3]);
+  });
+});
+
+describe('tournerCoins (photo tournée d\'un quart de tour vers la droite)', () => {
+  it('suit la feuille : chaque coin va où la photo l\'emmène, puis l\'ordre HG, HD, BD, BG est rétabli', () => {
+    // photo 400 × 300 ; après rotation elle fait 300 × 400 et (x, y) devient (300 − y, x)
+    expect(tournerCoins(feuille, 300)).toEqual([
+      { x: 50, y: 45 }, { x: 260, y: 60 }, { x: 245, y: 330 }, { x: 30, y: 350 },
+    ]);
+  });
+
+  it('quatre quarts de tour ramènent au point de départ', () => {
+    let c = feuille, l = 400, h = 300;
+    for (let k = 0; k < 4; k++) { c = tournerCoins(c, h); [l, h] = [h, l]; }
+    expect(c).toEqual(feuille);
   });
 });
 

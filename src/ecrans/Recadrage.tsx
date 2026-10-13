@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
-import { urlImage } from '../navigateur/images';
+import { tournerJpeg, urlImage } from '../navigateur/images';
 import type { PageBrouillon } from '../rangement/modele';
-import { coinsPleineImage, deplacerCote, milieuCote, ordonnerCoins } from '../traitement/geometrie';
-import type { Coins, Point, Rotation } from '../traitement/types';
-import { retour, type Lot, type Nav } from './navigation';
+import { coinsPleineImage, deplacerCote, milieuCote, ordonnerCoins, tournerCoins } from '../traitement/geometrie';
+import type { Coins, Point } from '../traitement/types';
+import { messageErreur, retour, type Lot, type Nav } from './navigation';
 
 export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
   const [brouillons, setBrouillons] = useState(lot.brouillons);
@@ -14,6 +14,7 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
   const [glisseCote, setGlisseCote] = useState<{ cote: number; depart: Point; base: Coins } | null>(null);
   // La loupe se place du côté opposé au doigt, pour ne pas cacher le coin qu'on déplace.
   const [loupeADroite, setLoupeADroite] = useState(false);
+  const [rotationEnCours, setRotationEnCours] = useState(false);
   const svg = useRef<SVGSVGElement>(null);
   const image = useRef<HTMLImageElement>(null);
   const loupe = useRef<HTMLCanvasElement>(null);
@@ -76,9 +77,19 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
     setGlisseCote(null);
   }
 
-  /** Part de l'angle à jour (et non de `b`) : plusieurs touchers rapides s'additionnent bien. */
-  function pivoter() {
-    setBrouillons((l) => l.map((x, k) => (k === i ? { ...x, rotation: ((x.rotation + 90) % 360) as Rotation } : x)));
+  /** Tourne réellement la photo (et le contour) d'un quart de tour : on voit tout de suite le résultat. */
+  async function pivoter() {
+    if (rotationEnCours) return;
+    setRotationEnCours(true);
+    try {
+      const original = await tournerJpeg(b.original);
+      const coins = tournerCoins(b.coins, b.original.hauteur);
+      setBrouillons((l) => l.map((x, k) => (k === i ? { ...x, original, coins } : x)));
+    } catch (e) {
+      nav.signaler(messageErreur(e));
+    } finally {
+      setRotationEnCours(false);
+    }
   }
 
   function valider() {
@@ -119,7 +130,7 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
       </div>
       <div class="commandes">
         <button onClick={() => nav.aller(retour(lot))}>Annuler</button>
-        <button onClick={pivoter}>↻ {b.rotation}°</button>
+        <button onClick={pivoter} disabled={rotationEnCours} aria-label="Tourner d'un quart de tour">↻</button>
         <button onClick={() => modifier({ coins: coinsPleineImage(b.original.largeur, b.original.hauteur) })}>Tout</button>
         {brouillons.length > 1 && (
           <span class="ligne">

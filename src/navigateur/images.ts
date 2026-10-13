@@ -55,6 +55,19 @@ export async function reencoder(im: ImageJpeg, coteMax: number, qualite: number)
   return canvasVersJpeg(versCanvas(img, img.naturalWidth, img.naturalHeight, coteMax), qualite);
 }
 
+/** Tourne une photo d'un quart de tour vers la droite : le point (x, y) devient (hauteur − y, x). */
+export async function tournerJpeg(im: ImageJpeg): Promise<ImageJpeg> {
+  const img = await chargerImage(im.octets);
+  const c = document.createElement('canvas');
+  c.width = img.naturalHeight;
+  c.height = img.naturalWidth;
+  const ctx = c.getContext('2d')!;
+  ctx.translate(c.width, 0);
+  ctx.rotate(Math.PI / 2);
+  ctx.drawImage(img, 0, 0);
+  return canvasVersJpeg(c, 0.92);
+}
+
 /** Adresse temporaire pour afficher une image ; la libérer avec URL.revokeObjectURL. */
 export function urlImage(im: ImageJpeg): string {
   return URL.createObjectURL(new Blob([im.octets], { type: 'image/jpeg' }));
