@@ -10,7 +10,8 @@ export type Ecran =
   | { nom: 'recadrage'; lot: Lot }
   | { nom: 'filtres'; lot: Lot }
   | { nom: 'document'; id: string }
-  | { nom: 'export'; id: string };
+  /** Un document (depuis son écran) ou plusieurs (cochés sur l'accueil). */
+  | { nom: 'export'; ids: string[] };
 
 export interface Nav { aller(e: Ecran): void; signaler(message: string): void }
 

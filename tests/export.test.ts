@@ -1,7 +1,7 @@
 import { PDFDocument } from 'pdf-lib';
 import { describe, expect, it } from 'vitest';
 import { fabriquerPdf, placement } from '../src/export/pdf';
-import { preparerExport, QUALITES } from '../src/export/preparer';
+import { preparerExport, preparerExportPlusieurs, QUALITES } from '../src/export/preparer';
 import type { DocumentScan, PageScan } from '../src/rangement/modele';
 import { jpegFactice, pageFactice } from './aides/jpeg';
 
@@ -68,5 +68,23 @@ describe('preparerExport', () => {
   it('JPG d\'une seule page : pas de numéro', async () => {
     const fichiers = await preparerExport(doc, pages.slice(0, 1), { type: 'jpg', format: 'a4', qualite: 'normale' }, identite);
     expect(fichiers.map((f) => f.name)).toEqual(['Fiche - 3.jpg']);
+  });
+});
+
+describe('preparerExportPlusieurs (documents cochés)', () => {
+  const docA: DocumentScan = { id: 'a', nom: 'Reçu', cree: 0, modifie: 0, pages: ['a1', 'a2'] };
+  const docB: DocumentScan = { id: 'b', nom: 'Reçu', cree: 0, modifie: 0, pages: ['b1'] };
+  const pagesDe = (d: DocumentScan): PageScan[] => d.pages.map((id) => ({ ...pageFactice(), id, documentId: d.id }));
+  const identite = async (im: PageScan['traitee']) => im;
+
+  it('un PDF par document, noms rendus uniques, progression sur toutes les pages', async () => {
+    const progres: string[] = [];
+    const fichiers = await preparerExportPlusieurs(
+      [{ doc: docA, pages: pagesDe(docA) }, { doc: docB, pages: pagesDe(docB) }],
+      { type: 'pdf', format: 'a4', qualite: 'legere' }, identite, (fait, total) => progres.push(`${fait}/${total}`),
+    );
+    expect(fichiers.map((f) => f.name)).toEqual(['Reçu.pdf', 'Reçu (2).pdf']);
+    expect(progres).toEqual(['1/3', '2/3', '3/3']);
+    expect((await PDFDocument.load(new Uint8Array(await fichiers[0].arrayBuffer()))).getPageCount()).toBe(2);
   });
 });

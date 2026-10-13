@@ -1,4 +1,4 @@
-import { nomFichier } from '../nommage';
+import { nomFichier, nomsUniques } from '../nommage';
 import type { DocumentScan, ImageJpeg, PageScan } from '../rangement/modele';
 import { fabriquerPdf, type FormatPdf } from './pdf';
 
@@ -10,6 +10,28 @@ export const QUALITES = {
 } as const;
 
 export type Reencodeur = (im: ImageJpeg, coteMax: number, qualite: number) => Promise<ImageJpeg>;
+
+/**
+ * Plusieurs documents cochés : un ou des fichiers par document (comme pour un seul), noms rendus
+ * uniques, progression comptée sur l'ensemble des pages.
+ */
+export async function preparerExportPlusieurs(
+  lots: { doc: DocumentScan; pages: PageScan[] }[],
+  options: OptionsExport,
+  reencoder: Reencodeur,
+  progres?: (fait: number, total: number) => void,
+): Promise<File[]> {
+  const total = lots.reduce((s, l) => s + l.pages.length, 0);
+  let dejaFait = 0;
+  const fichiers: File[] = [];
+  for (const { doc, pages } of lots) {
+    const avant = dejaFait;
+    fichiers.push(...await preparerExport(doc, pages, options, reencoder, (fait) => progres?.(avant + fait, total)));
+    dejaFait += pages.length;
+  }
+  const noms = nomsUniques(fichiers.map((f) => f.name));
+  return fichiers.map((f, k) => (noms[k] === f.name ? f : new File([f], noms[k], { type: f.type })));
+}
 
 /** Réencode les pages une par une (pour ménager la mémoire de Safari), puis fabrique les fichiers. */
 export async function preparerExport(

@@ -126,6 +126,35 @@ export class Depot {
     ]);
   }
 
+  /**
+   * Fusionne les documents dans le premier de la liste : ses pages d'abord, puis celles des
+   * suivants dans l'ordre donné ; les autres documents disparaissent. Renvoie l'id du document gardé.
+   */
+  async fusionner(ids: string[]): Promise<string> {
+    if (ids.length < 2) throw new Error('Il faut au moins deux documents à fusionner.');
+    const [cibleId, ...autres] = ids;
+    await proteger(async () => {
+      const tx = this.db.transaction(['documents', 'pages'], 'readwrite');
+      const cible = await tx.objectStore('documents').get(cibleId);
+      if (!cible) throw new Error('Document introuvable');
+      for (const id of autres) {
+        const doc = await tx.objectStore('documents').get(id);
+        if (!doc) continue;
+        for (const pageId of doc.pages) {
+          const page = await tx.objectStore('pages').get(pageId);
+          if (!page) continue;
+          await tx.objectStore('pages').put({ ...page, documentId: cibleId });
+          cible.pages.push(pageId);
+        }
+        await tx.objectStore('documents').delete(id);
+      }
+      cible.modifie = this.horloge();
+      await tx.objectStore('documents').put(cible);
+      await tx.done;
+    });
+    return cibleId;
+  }
+
   async toutLire(): Promise<{ documents: DocumentScan[]; pages: PageScan[] }> {
     return { documents: await this.db.getAll('documents'), pages: await this.db.getAll('pages') };
   }

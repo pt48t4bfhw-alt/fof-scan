@@ -127,7 +127,7 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
       </div>
       <div class="barre-bas">
         <button onClick={() => setAjout(true)}>Ajouter</button>
-        <button class="principal" onClick={() => nav.aller({ nom: 'export', id })} disabled={!pages.length}>Exporter</button>
+        <button class="principal" onClick={() => nav.aller({ nom: 'export', ids: [id] })} disabled={!pages.length}>Exporter</button>
       </div>
       <input ref={entreeImport} type="file" accept="image/*" multiple hidden
         onChange={(e) => { const f = Array.from(e.currentTarget.files ?? []); e.currentTarget.value = ''; if (f.length) importer(f); }} />

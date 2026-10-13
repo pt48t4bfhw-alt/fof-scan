@@ -74,6 +74,30 @@ describe('Depot', () => {
     expect(await cible.toutLire()).toEqual({ documents, pages });
   });
 
+  it('fusionne plusieurs documents dans le premier coché, dans l\'ordre où ils ont été cochés', async () => {
+    const d = await depotNeuf();
+    const a = await d.creerDocument('A');
+    const pa = await d.ajouterPage(a.id, pageFactice(10));
+    const b = await d.creerDocument('B');
+    const pb1 = await d.ajouterPage(b.id, pageFactice(20));
+    const pb2 = await d.ajouterPage(b.id, pageFactice(30));
+    const c = await d.creerDocument('C');
+    const pc = await d.ajouterPage(c.id, pageFactice(40));
+    const id = await d.fusionner([b.id, a.id, c.id]);
+    expect(id).toBe(b.id);
+    expect((await d.lirePages(b.id)).map((p) => p.id)).toEqual([pb1.id, pb2.id, pa.id, pc.id]);
+    expect((await d.lirePages(b.id)).every((p) => p.documentId === b.id)).toBe(true);
+    expect(await d.lireDocument(a.id)).toBeUndefined();
+    expect(await d.lireDocument(c.id)).toBeUndefined();
+    expect((await d.listerDocuments()).map((x) => x.nom)).toEqual(['B']);
+  });
+
+  it('refuse de fusionner moins de deux documents', async () => {
+    const d = await depotNeuf();
+    const a = await d.creerDocument('A');
+    await expect(d.fusionner([a.id])).rejects.toThrow('au moins deux');
+  });
+
   it('reconnaît une erreur de mémoire pleine', () => {
     expect(estErreurQuota(new DOMException('plein', 'QuotaExceededError'))).toBe(true);
     expect(estErreurQuota(new Error('autre'))).toBe(false);

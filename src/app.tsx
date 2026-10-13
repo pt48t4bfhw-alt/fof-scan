@@ -43,7 +43,7 @@ export function App() {
           {ecran.nom === 'recadrage' && <Recadrage lot={ecran.lot} nav={nav} />}
           {ecran.nom === 'filtres' && <Filtres lot={ecran.lot} depot={depot} nav={nav} />}
           {ecran.nom === 'document' && <DocumentEcran id={ecran.id} depot={depot} nav={nav} />}
-          {ecran.nom === 'export' && <ExportEcran id={ecran.id} depot={depot} nav={nav} />}
+          {ecran.nom === 'export' && <ExportEcran ids={ecran.ids} depot={depot} nav={nav} />}
         </>
       )}
       <MiseAJourAuto surAccueil={ecran.nom === 'accueil'} />

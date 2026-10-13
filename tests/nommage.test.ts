@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dateCourte, nomFichier, nomParDefaut, tailleLisible } from '../src/nommage';
+import { dateCourte, nomFichier, nomParDefaut, nomsUniques, tailleLisible } from '../src/nommage';
 
 describe('nommage', () => {
   it('donne un nom par défaut daté', () => {
@@ -17,6 +17,10 @@ describe('nommage', () => {
 
   it('affiche une date courte', () => {
     expect(dateCourte(new Date(2026, 9, 12, 9, 7).getTime())).toBe('12/10/2026 09h07');
+  });
+
+  it('rend les noms de fichiers uniques pour un envoi groupé', () => {
+    expect(nomsUniques(['Fiche.pdf', 'Reçu.pdf', 'Fiche.pdf', 'Fiche.pdf'])).toEqual(['Fiche.pdf', 'Reçu.pdf', 'Fiche (2).pdf', 'Fiche (3).pdf']);
   });
 
   it('affiche une taille lisible', () => {
