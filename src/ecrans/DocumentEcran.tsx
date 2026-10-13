@@ -3,6 +3,7 @@ import Sortable from 'sortablejs';
 import { urlImage } from '../navigateur/images';
 import type { Depot } from '../rangement/depot';
 import type { DocumentScan, PageScan } from '../rangement/modele';
+import { REGLAGES_NEUTRES } from '../traitement/types';
 import { importerFichiers } from './importer';
 import { messageErreur, type Nav } from './navigation';
 
@@ -86,7 +87,10 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
       nom: 'recadrage',
       lot: {
         documentId: id,
-        brouillons: [{ original: p.original, coins: p.coins, rotation: p.rotation, filtre: p.filtre, detecte: true }],
+        brouillons: [{
+          original: p.original, coins: p.coins, rotation: p.rotation, filtre: p.filtre,
+          reglages: p.reglages ?? REGLAGES_NEUTRES, detecte: true,
+        }],
         pageExistante: p,
       },
     });

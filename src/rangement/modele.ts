@@ -1,4 +1,4 @@
-import type { Coins, Filtre, Rotation } from '../traitement/types';
+import type { Coins, Filtre, Reglages, Rotation } from '../traitement/types';
 
 export interface DocumentScan {
   id: string;
@@ -19,6 +19,8 @@ export interface PageScan {
   coins: Coins;
   rotation: Rotation;
   filtre: Filtre;
+  /** Curseurs manuels ; absents des pages enregistrées avant leur arrivée (= neutres). */
+  reglages?: Reglages;
   traitee: ImageJpeg;
   miniature: ImageJpeg;
 }
@@ -31,6 +33,7 @@ export interface PageBrouillon {
   coins: Coins;
   rotation: Rotation;
   filtre: Filtre;
+  reglages: Reglages;
   /** Faux quand la feuille n'a pas été trouvée et que les coins couvrent toute la photo. */
   detecte: boolean;
 }

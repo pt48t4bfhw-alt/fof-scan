@@ -4,10 +4,11 @@ import { enregistrerLot } from '../src/ecrans/lot';
 import { ouvrirDepot } from '../src/rangement/depot';
 import type { NouvellePage, PageBrouillon } from '../src/rangement/modele';
 import { coinsPleineImage } from '../src/traitement/geometrie';
+import { REGLAGES_NEUTRES } from '../src/traitement/types';
 import { jpegFactice, pageFactice } from './aides/jpeg';
 
 const brouillon = (gris: number): PageBrouillon => ({
-  original: jpegFactice(4, 4, gris), coins: coinsPleineImage(4, 4), rotation: 0, filtre: 'nb', detecte: true,
+  original: jpegFactice(4, 4, gris), coins: coinsPleineImage(4, 4), rotation: 0, filtre: 'nb', reglages: REGLAGES_NEUTRES, detecte: true,
 });
 const rendre = async (b: PageBrouillon): Promise<NouvellePage> => ({
   original: b.original, coins: b.coins, rotation: b.rotation, filtre: b.filtre, traitee: b.original, miniature: b.original,

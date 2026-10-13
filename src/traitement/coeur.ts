@@ -13,7 +13,7 @@ export function gererRequete(cv: CV, r: Requete): Reponse {
         return { id: r.id, ok: true, type: 'detecter', coins: detecterCoins(cv, r.img) };
       case 'traiter': {
         const droit = redresser(cv, r.img, r.coins, r.rotation);
-        return { id: r.id, ok: true, type: 'traiter', img: appliquerFiltre(cv, droit, r.filtre) };
+        return { id: r.id, ok: true, type: 'traiter', img: appliquerFiltre(cv, droit, r.filtre, r.reglages) };
       }
     }
   } catch (e) {

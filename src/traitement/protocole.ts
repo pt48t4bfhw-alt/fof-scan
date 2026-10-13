@@ -1,9 +1,9 @@
-import type { Coins, Filtre, Img, Rotation } from './types';
+import type { Coins, Filtre, Img, Reglages, Rotation } from './types';
 
 export type Requete =
   | { id: number; type: 'preparer' }
   | { id: number; type: 'detecter'; img: Img }
-  | { id: number; type: 'traiter'; img: Img; coins: Coins; rotation: Rotation; filtre: Filtre };
+  | { id: number; type: 'traiter'; img: Img; coins: Coins; rotation: Rotation; filtre: Filtre; reglages: Reglages };
 
 export type Reponse =
   | { id: number; ok: true; type: 'preparer' }

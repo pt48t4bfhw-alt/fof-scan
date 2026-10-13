@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { chargerOpenCV, type CV } from '../src/traitement/opencv';
 import { appliquerFiltre } from '../src/traitement/filtres';
+import { REGLAGES_NEUTRES, type Img } from '../src/traitement/types';
 import { imageDegrade, imageUnie, lireGris, remplirPolygone } from './aides/images';
 
 let cv: CV;
@@ -66,5 +67,68 @@ describe('appliquerFiltre', () => {
     // le trait clair dans l'ombre reste nettement plus sombre que le papier
     expect(lireGris(sortie, 53, 100)).toBeLessThan(120);
     expect(lireGris(sortie, 253, 100)).toBeLessThan(40);
+  });
+});
+
+/** Papier rose (comme l'affichette) avec une ombre à gauche et du texte noir. */
+function papierRose(): Img {
+  const img = imageUnie(300, 200, 0);
+  for (let y = 0; y < 200; y++) for (let x = 0; x < 300; x++) {
+    const ombre = 0.7 + (0.3 * x) / 299;
+    const i = (y * 300 + x) * 4;
+    img.data[i] = 235 * ombre; img.data[i + 1] = 160 * ombre; img.data[i + 2] = 200 * ombre;
+  }
+  remplirPolygone(img, [{ x: 140, y: 80 }, { x: 146, y: 80 }, { x: 146, y: 130 }, { x: 140, y: 130 }], 20);
+  return img;
+}
+const moyenne = (img: Img) => { let s = 0; for (let i = 0; i < img.data.length; i += 4) s += img.data[i]; return s / (img.data.length / 4); };
+const ecartType = (img: Img) => {
+  const m = moyenne(img); let s = 0;
+  for (let i = 0; i < img.data.length; i += 4) s += (img.data[i] - m) ** 2;
+  return Math.sqrt(s / (img.data.length / 4));
+};
+/** Somme des écarts entre pixels voisins : grandit quand l'image est plus nette. */
+const energie = (img: Img) => { let s = 0; for (let i = 4; i < img.data.length; i += 4) s += Math.abs(img.data[i] - img.data[i - 4]); return s; };
+const rougeMoinsVert = (img: Img, x: number, y: number) => { const i = (y * img.width + x) * 4; return img.data[i] - img.data[i + 1]; };
+
+describe('modes CamScanner et curseurs', () => {
+  it('Éclaircir éclaircit la page en gardant sa couleur (le papier rose reste rose)', () => {
+    const src = papierRose();
+    const eclairci = appliquerFiltre(cv, src, 'eclaircir');
+    expect(moyenne(eclairci)).toBeGreaterThan(moyenne(src) + 10);
+    expect(rougeMoinsVert(eclairci, 250, 30)).toBeGreaterThan(30);
+    // à l'inverse, Couleur magique blanchit le papier
+    expect(rougeMoinsVert(appliquerFiltre(cv, src, 'ameliore'), 250, 30)).toBeLessThan(25);
+    // et le texte reste foncé
+    expect(lireGris(eclairci, 143, 105)).toBeLessThan(90);
+  });
+
+  it('sans réglage, Original rend la même image', () => {
+    const img = imageUnie(10, 10, 100);
+    expect(appliquerFiltre(cv, img, 'original', REGLAGES_NEUTRES)).toBe(img);
+  });
+
+  it('Luminosité éclaircit (+) ou assombrit (−)', () => {
+    const src = papierOmbre();
+    const base = moyenne(appliquerFiltre(cv, src, 'gris'));
+    expect(moyenne(appliquerFiltre(cv, src, 'gris', { ...REGLAGES_NEUTRES, luminosite: 40 }))).toBeGreaterThan(base + 20);
+    expect(moyenne(appliquerFiltre(cv, src, 'gris', { ...REGLAGES_NEUTRES, luminosite: -40 }))).toBeLessThan(base - 20);
+  });
+
+  it('Contraste écarte les clairs et les foncés', () => {
+    const src = imageDegrade(300, 200, 90, 170);
+    expect(ecartType(appliquerFiltre(cv, src, 'original', { ...REGLAGES_NEUTRES, contraste: 40 })))
+      .toBeGreaterThan(ecartType(src) * 1.25);
+  });
+
+  it('Détail rend l\'image plus nette', () => {
+    const src = papierOmbre();
+    const base = appliquerFiltre(cv, src, 'gris');
+    expect(energie(appliquerFiltre(cv, src, 'gris', { ...REGLAGES_NEUTRES, detail: 100 }))).toBeGreaterThan(energie(base) * 1.2);
+  });
+
+  it('N&B reste en pur noir et blanc même avec des réglages', () => {
+    const sortie = appliquerFiltre(cv, papierOmbre(), 'nb', { luminosite: 20, contraste: 20, detail: 50 });
+    for (let i = 0; i < sortie.data.length; i += 4) expect([0, 255]).toContain(sortie.data[i]);
   });
 });

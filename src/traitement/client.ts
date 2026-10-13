@@ -1,5 +1,5 @@
 import type { PortWorker, Reponse, Requete } from './protocole';
-import type { Coins, Filtre, Img, Rotation } from './types';
+import { REGLAGES_NEUTRES, type Coins, type Filtre, type Img, type Reglages, type Rotation } from './types';
 
 export class Traitement {
   private suivant = 1;
@@ -32,8 +32,8 @@ export class Traitement {
     return r.coins;
   }
 
-  async traiter(img: Img, coins: Coins, rotation: Rotation, filtre: Filtre): Promise<Img> {
-    const r = await this.envoyer({ id: this.suivant++, type: 'traiter', img, coins, rotation, filtre }, [img.data.buffer]);
+  async traiter(img: Img, coins: Coins, rotation: Rotation, filtre: Filtre, reglages: Reglages = REGLAGES_NEUTRES): Promise<Img> {
+    const r = await this.envoyer({ id: this.suivant++, type: 'traiter', img, coins, rotation, filtre, reglages }, [img.data.buffer]);
     if (!r.ok) throw new Error(r.erreur);
     if (r.type !== 'traiter') throw new Error('Réponse inattendue du traitement');
     return r.img;

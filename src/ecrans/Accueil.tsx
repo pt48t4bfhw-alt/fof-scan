@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { filtreParDefaut } from '../navigateur/pipeline';
+import { ecrirePreference } from '../navigateur/preferences';
 import { dateCourte } from '../nommage';
+import type { Filtre } from '../traitement/types';
+import { MODES, nomDuMode } from './modes';
 import type { Depot } from '../rangement/depot';
 import type { DocumentScan } from '../rangement/modele';
 import { creerSauvegarde, lireSauvegarde, nomSauvegarde } from '../rangement/sauvegarde';
@@ -15,6 +19,8 @@ export function Accueil({ depot, nav }: { depot: Depot; nav: Nav }) {
   const [menu, setMenu] = useState(false);
   const [pret, setPret] = useState<File[] | null>(null);
   const [occupe, setOccupe] = useState<string | null>(null);
+  const [choixFiltre, setChoixFiltre] = useState(false);
+  const [filtreDefaut, setFiltreDefaut] = useState<Filtre>(filtreParDefaut);
   const entreeImport = useRef<HTMLInputElement>(null);
   const entreeRestaurer = useRef<HTMLInputElement>(null);
 
@@ -92,9 +98,24 @@ export function Accueil({ depot, nav }: { depot: Depot; nav: Nav }) {
         <>
           <div class="voile" onClick={() => setMenu(false)} />
           <div class="feuille-actions">
+            <button onClick={() => { setMenu(false); setChoixFiltre(true); }}>Filtre par défaut : {nomDuMode(filtreDefaut)}</button>
             <button onClick={sauvegarder}>Sauvegarder tout</button>
             <button onClick={() => { setMenu(false); entreeRestaurer.current?.click(); }}>Restaurer une sauvegarde</button>
             <button onClick={() => setMenu(false)}>Fermer</button>
+          </div>
+        </>
+      )}
+      {choixFiltre && (
+        <>
+          <div class="voile" onClick={() => setChoixFiltre(false)} />
+          <div class="feuille-actions">
+            <strong>Filtre appliqué aux nouveaux scans</strong>
+            {MODES.map(({ filtre, nom }) => (
+              <button key={filtre} aria-pressed={filtreDefaut === filtre}
+                onClick={() => { ecrirePreference('filtreParDefaut', filtre); setFiltreDefaut(filtre); setChoixFiltre(false); }}>
+                {nom}
+              </button>
+            ))}
           </div>
         </>
       )}

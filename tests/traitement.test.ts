@@ -3,7 +3,7 @@ import { chargerOpenCV, type CV } from '../src/traitement/opencv';
 import { gererRequete } from '../src/traitement/coeur';
 import { Traitement } from '../src/traitement/client';
 import type { PortWorker, Reponse, Requete } from '../src/traitement/protocole';
-import type { Coins } from '../src/traitement/types';
+import { REGLAGES_NEUTRES, type Coins } from '../src/traitement/types';
 import { imageUnie, remplirPolygone } from './aides/images';
 
 const vrais: Coins = [{ x: 60, y: 40 }, { x: 330, y: 55 }, { x: 350, y: 270 }, { x: 45, y: 250 }];
@@ -32,7 +32,7 @@ describe('gererRequete', () => {
   });
 
   it('redresse puis filtre', () => {
-    const r = gererRequete(cv, { id: 2, type: 'traiter', img: scene(), coins: vrais, rotation: 0, filtre: 'nb' });
+    const r = gererRequete(cv, { id: 2, type: 'traiter', img: scene(), coins: vrais, rotation: 0, filtre: 'nb', reglages: REGLAGES_NEUTRES });
     if (!r.ok || r.type !== 'traiter') throw new Error('réponse inattendue');
     expect(r.img.width).toBeGreaterThan(250);
   });

@@ -1,7 +1,12 @@
 import type { NouvellePage, PageBrouillon } from '../rangement/modele';
 import { traitement } from '../traitement/client';
 import { coinsPleineImage, mettreAEchelle } from '../traitement/geometrie';
+import { REGLAGES_NEUTRES, type Filtre } from '../traitement/types';
 import { canvasVersJpeg, chargerImage, imgVersCanvas, lireImg, versCanvas } from './images';
+import { lirePreference } from './preferences';
+
+/** Mode appliqué aux nouveaux scans, réglable dans le menu ⋯ de l'accueil (Couleur magique au départ). */
+export const filtreParDefaut = (): Filtre => lirePreference<Filtre>('filtreParDefaut', 'ameliore');
 
 const COTE_MAX = 3000;
 const COTE_DETECTION = 1000;
@@ -15,7 +20,8 @@ export async function brouillonDepuisCanvas(c: HTMLCanvasElement): Promise<PageB
     original,
     coins: coins ? mettreAEchelle(coins, c.width / petit.width) : coinsPleineImage(c.width, c.height),
     rotation: 0,
-    filtre: 'ameliore',
+    filtre: filtreParDefaut(),
+    reglages: REGLAGES_NEUTRES,
     detecte: coins !== null,
   };
 }
@@ -30,7 +36,7 @@ export async function traiterBrouillon(b: PageBrouillon, coteMax: number): Promi
   const img = await chargerImage(b.original.octets);
   const c = versCanvas(img, img.naturalWidth, img.naturalHeight, coteMax);
   const coins = mettreAEchelle(b.coins, c.width / b.original.largeur);
-  return imgVersCanvas(await traitement().traiter(lireImg(c), coins, b.rotation, b.filtre));
+  return imgVersCanvas(await traitement().traiter(lireImg(c), coins, b.rotation, b.filtre, b.reglages));
 }
 
 export async function rendrePage(b: PageBrouillon): Promise<NouvellePage> {
@@ -40,6 +46,7 @@ export async function rendrePage(b: PageBrouillon): Promise<NouvellePage> {
     coins: b.coins,
     rotation: b.rotation,
     filtre: b.filtre,
+    reglages: b.reglages,
     traitee: await canvasVersJpeg(c, 0.85),
     miniature: await canvasVersJpeg(versCanvas(c, c.width, c.height, 300), 0.7),
   };
