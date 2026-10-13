@@ -64,13 +64,33 @@ function detecterParLignes(cv: CV, img: Img): Coins | null {
   }
 }
 
-/** Bords de l'image : texte effacé par une fermeture, puis Canny sur chaque canal (papier coloré compris). */
-function carteBords(cv: CV, img: Img): CV {
+/**
+ * Carte des bords nets pour l'aimantation du recadrage : celle de la détection, élargie de 2 px
+ * de chaque côté (un contour posé à la main ou par l'IA tombe souvent 1 à 3 px à côté du trait ;
+ * l'aimant prend ensuite le milieu de la bande, la précision est gardée).
+ */
+export function masqueDesBords(cv: CV, img: Img): { data: Uint8Array; largeur: number; hauteur: number } {
+  const bords = carteBords(cv, img, 160);
+  const noyau = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(5, 5));
+  try {
+    cv.dilate(bords, bords, noyau);
+    return { data: new Uint8Array(bords.data), largeur: img.width, hauteur: img.height };
+  } finally {
+    bords.delete(); noyau.delete();
+  }
+}
+
+/**
+ * Bords de l'image : texte effacé par une fermeture, puis Canny sur chaque canal (papier coloré compris).
+ * La fermeture efface aussi toute bande sombre plus étroite qu'elle : `finesse` la règle (1/60 de la
+ * photo pour la détection ; plus fine pour l'aimant, qui doit voir le bord d'un reçu collé à une couverture).
+ */
+function carteBords(cv: CV, img: Img, finesse = 60): CV {
   const W = img.width, H = img.height;
   const src = cv.matFromImageData(img);
   const rgb = new cv.Mat();
   const ferme = new cv.Mat();
-  const k = Math.max(5, Math.round(Math.max(W, H) / 60)) | 1;
+  const k = Math.max(5, Math.round(Math.max(W, H) / finesse)) | 1;
   const noyau = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(k, k));
   const canaux = new cv.MatVector();
   const bords = cv.Mat.zeros(H, W, cv.CV_8U);

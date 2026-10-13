@@ -1,7 +1,8 @@
-import type { NouvellePage, PageBrouillon } from '../rangement/modele';
+import type { ImageJpeg, NouvellePage, PageBrouillon } from '../rangement/modele';
+import type { Masque } from '../traitement/aimant';
 import { traitement } from '../traitement/client';
 import { coinsPleineImage, mettreAEchelle } from '../traitement/geometrie';
-import { REGLAGES_NEUTRES, type Filtre } from '../traitement/types';
+import { REGLAGES_NEUTRES, type Coins, type Filtre } from '../traitement/types';
 import { canvasVersJpeg, chargerImage, imgVersCanvas, lireImg, versCanvas } from './images';
 import { lirePreference } from './preferences';
 
@@ -29,6 +30,22 @@ export async function brouillonDepuisCanvas(c: HTMLCanvasElement): Promise<PageB
 export async function brouillonDepuisFichier(f: Blob): Promise<PageBrouillon> {
   const img = await chargerImage(f);
   return brouillonDepuisCanvas(versCanvas(img, img.naturalWidth, img.naturalHeight, COTE_MAX));
+}
+
+/** Relance la détection de la feuille sur une photo (par exemple après une rotation). */
+export async function detecterSurPhoto(original: ImageJpeg): Promise<Coins | null> {
+  const img = await chargerImage(original.octets);
+  const petit = versCanvas(img, img.naturalWidth, img.naturalHeight, COTE_DETECTION);
+  const coins = await traitement().detecter(lireImg(petit));
+  return coins ? mettreAEchelle(coins, original.largeur / petit.width) : null;
+}
+
+/** Carte des bords nets de la photo (en 800 px) pour aimanter les poignées du recadrage. */
+export async function bordsDeLaPhoto(original: ImageJpeg): Promise<Masque> {
+  const img = await chargerImage(original.octets);
+  const petit = versCanvas(img, img.naturalWidth, img.naturalHeight, 800);
+  const masque = await traitement().bords(lireImg(petit));
+  return { ...masque, echelle: petit.width / original.largeur };
 }
 
 /** Redresse et filtre un brouillon ; `coteMax` réduit la taille pour un aperçu rapide. */

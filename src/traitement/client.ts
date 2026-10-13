@@ -32,6 +32,13 @@ export class Traitement {
     return r.coins;
   }
 
+  async bords(img: Img): Promise<{ data: Uint8Array; largeur: number; hauteur: number }> {
+    const r = await this.envoyer({ id: this.suivant++, type: 'bords', img }, [img.data.buffer]);
+    if (!r.ok) throw new Error(r.erreur);
+    if (r.type !== 'bords') throw new Error('Réponse inattendue du traitement');
+    return r.masque;
+  }
+
   async traiter(img: Img, coins: Coins, rotation: Rotation, filtre: Filtre, reglages: Reglages = REGLAGES_NEUTRES): Promise<Img> {
     const r = await this.envoyer({ id: this.suivant++, type: 'traiter', img, coins, rotation, filtre, reglages }, [img.data.buffer]);
     if (!r.ok) throw new Error(r.erreur);

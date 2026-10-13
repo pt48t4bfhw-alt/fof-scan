@@ -37,6 +37,17 @@ describe('gererRequete', () => {
     expect(r.img.width).toBeGreaterThan(250);
   });
 
+  it('fournit la carte des bords nets : allumée sur le bord de la feuille, éteinte au milieu', () => {
+    const r = gererRequete(cv, { id: 4, type: 'bords', img: scene() });
+    if (!r.ok || r.type !== 'bords') throw new Error('réponse inattendue');
+    const { data, largeur, hauteur } = r.masque;
+    expect([largeur, hauteur]).toEqual([400, 300]);
+    // bord gauche de la feuille, à mi-hauteur : entre (60,40) et (45,250)
+    const xBord = Math.round(60 + (45 - 60) * (105 / 210));
+    expect(data.slice(145 * largeur + xBord - 3, 145 * largeur + xBord + 4).some((v) => v > 0)).toBe(true);
+    expect(data[150 * largeur + 200]).toBe(0);
+  });
+
   it('transforme une exception en réponse d\'erreur', () => {
     const casse = { data: new Uint8ClampedArray(10 * 10 * 4 + 100), width: 10, height: 10 };
     const r = gererRequete(cv, { id: 3, type: 'detecter', img: casse });

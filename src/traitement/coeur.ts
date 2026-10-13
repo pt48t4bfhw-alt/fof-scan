@@ -1,4 +1,4 @@
-import { detecterCoins } from './detection';
+import { detecterCoins, masqueDesBords } from './detection';
 import { appliquerFiltre } from './filtres';
 import type { CV } from './opencv';
 import type { Reponse, Requete } from './protocole';
@@ -12,6 +12,8 @@ export function gererRequete(cv: CV, r: Requete): Reponse {
         return { id: r.id, ok: true, type: 'preparer' };
       case 'detecter':
         return { id: r.id, ok: true, type: 'detecter', coins: detecterCoins(cv, r.img) };
+      case 'bords':
+        return { id: r.id, ok: true, type: 'bords', masque: masqueDesBords(cv, r.img) };
       case 'traiter': {
         const droit = redresser(cv, r.img, r.coins, r.rotation);
         return { id: r.id, ok: true, type: 'traiter', img: appliquerFiltre(cv, droit, r.filtre, r.reglages) };

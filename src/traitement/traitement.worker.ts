@@ -37,5 +37,9 @@ portee.onmessage = async (e) => {
   const r = e.data;
   if (r.type === 'preparer') void chargerIA(); // l'IA se charge en arrière-plan dès l'ouverture de l'appli
   const reponse = r.type === 'detecter' ? await gererDetection(cv, await chargerIA(), r) : gererRequete(cv, r);
-  portee.postMessage(reponse, reponse.ok && reponse.type === 'traiter' ? [reponse.img.data.buffer] : []);
+  const transfert = !reponse.ok ? []
+    : reponse.type === 'traiter' ? [reponse.img.data.buffer]
+    : reponse.type === 'bords' ? [reponse.masque.data.buffer]
+    : [];
+  portee.postMessage(reponse, transfert);
 };

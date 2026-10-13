@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { tournerJpeg, urlImage } from '../navigateur/images';
+import { bordsDeLaPhoto, detecterSurPhoto } from '../navigateur/pipeline';
+import { aimanterCoin, aimanterCote, type Masque } from '../traitement/aimant';
 import type { PageBrouillon } from '../rangement/modele';
 import { coinsPleineImage, deplacerCote, milieuCote, ordonnerCoins, tournerCoins } from '../traitement/geometrie';
 import type { Coins, Point } from '../traitement/types';
@@ -15,6 +17,8 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
   // La loupe se place du côté opposé au doigt, pour ne pas cacher le coin qu'on déplace.
   const [loupeADroite, setLoupeADroite] = useState(false);
   const [rotationEnCours, setRotationEnCours] = useState(false);
+  const [detectionEnCours, setDetectionEnCours] = useState(false);
+  const [masque, setMasque] = useState<Masque | null>(null);
   const svg = useRef<SVGSVGElement>(null);
   const image = useRef<HTMLImageElement>(null);
   const loupe = useRef<HTMLCanvasElement>(null);
@@ -24,6 +28,14 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
     const u = urlImage(b.original);
     setUrl(u);
     return () => URL.revokeObjectURL(u);
+  }, [b.original]);
+
+  // Bords nets de la photo, pour l'aimantation (recalculés si la photo change, par exemple après une rotation).
+  useEffect(() => {
+    let actif = true;
+    setMasque(null);
+    bordsDeLaPhoto(b.original).then((m) => { if (actif) setMasque(m); }).catch(() => { /* sans aimant, le recadrage marche quand même */ });
+    return () => { actif = false; };
   }, [b.original]);
 
   const modifier = (m: Partial<PageBrouillon>) =>
@@ -72,9 +84,33 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
     dessinerLoupe(p);
   }
 
+  /** En lâchant une poignée, le coin ou le côté s'aimante au bord net le plus proche (s'il y en a un). */
   function lacher() {
+    if (masque && (glisse !== null || glisseCote)) {
+      const rayon = 0.025 * Math.hypot(b.original.largeur, b.original.hauteur);
+      const coin = glisse, cote = glisseCote?.cote;
+      setBrouillons((l) => l.map((x, k) => {
+        if (k !== i) return x;
+        const coins = coin !== null ? aimanterCoin(x.coins, coin, masque, rayon) : aimanterCote(x.coins, cote!, masque, rayon);
+        return { ...x, coins: coins.map(dansImage) as Coins };
+      }));
+    }
     setGlisse(null);
     setGlisseCote(null);
+  }
+
+  /** « Auto » : relance la détection sur la photo telle qu'elle est (même tournée). */
+  async function reinitialiser() {
+    setDetectionEnCours(true);
+    try {
+      const coins = await detecterSurPhoto(b.original);
+      if (coins) modifier({ coins, detecte: true });
+      else nav.signaler('Feuille non détectée : le contour n\'a pas changé.');
+    } catch (e) {
+      nav.signaler(messageErreur(e));
+    } finally {
+      setDetectionEnCours(false);
+    }
   }
 
   /** Tourne réellement la photo (et le contour) d'un quart de tour : on voit tout de suite le résultat. */
@@ -132,6 +168,7 @@ export function Recadrage({ lot, nav }: { lot: Lot; nav: Nav }) {
         <button onClick={() => nav.aller(retour(lot))}>Annuler</button>
         <button onClick={pivoter} disabled={rotationEnCours} aria-label="Tourner d'un quart de tour">↻</button>
         <button onClick={() => modifier({ coins: coinsPleineImage(b.original.largeur, b.original.hauteur) })}>Tout</button>
+        <button onClick={reinitialiser} disabled={detectionEnCours}>Auto</button>
         {brouillons.length > 1 && (
           <span class="ligne">
             <button onClick={() => setI(i - 1)} disabled={i === 0}>‹</button>
