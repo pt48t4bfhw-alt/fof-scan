@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { LigneLue } from '../src/lecture/modele';
-import { choisirMode, dansLeTableau, plusGrandGroupe, rangerDansTableau, trouverTableau } from '../src/lecture/tableau';
+import { choisirMode, dansLeTableau, plusGrandGroupe, rangerDansTableau, tableauDepuisCases, trouverTableau } from '../src/lecture/tableau';
 import { chargerOpenCV, type CV } from '../src/traitement/opencv';
 import { pageAvecTraits, TABLEAU, type Trait } from './aides/traits';
 
@@ -59,6 +59,28 @@ describe('rangement et choix du mode', () => {
     expect(t).not.toBeNull();
     expect(choisirMode(rangerDansTableau(t!, [ligne(30, 30, 'Audit')]))).toBe('texte');
     expect(choisirMode(null)).toBe('texte');
+  });
+
+  it('une case écartée (écriture qui déborde sur les traits) est recréée d\'après la grille', () => {
+    const r = (x: number, y: number) => ({ x, y, largeur: 190, hauteur: 90 });
+    const t = tableauDepuisCases([r(105, 105), r(305, 105), r(105, 205), r(105, 305), r(305, 305)], 600, 500)!;
+    expect([t.rangs, t.cols, t.cases.length]).toEqual([3, 2, 6]);
+    const recree = t.cases.find((c) => c.rang === 1 && c.col === 1)!;
+    // bords de la case recréée : sur les traits voisins (moyenne des bords des cases autour)
+    expect(recree.rect.x).toBeGreaterThanOrEqual(295);
+    expect(recree.rect.x).toBeLessThanOrEqual(305);
+    expect(recree.rect.y).toBeGreaterThanOrEqual(195);
+    expect(recree.rect.y).toBeLessThanOrEqual(205);
+  });
+
+  it('une ligne du tableau hors de toute case va dans la case la plus proche', () => {
+    const vide = { texte: '', confiance: 1, corrige: false, rang: 0, rangs: 1, cols: 1 };
+    const t = {
+      rect: { x: 0, y: 0, largeur: 400, hauteur: 100 }, rangs: 1, cols: 2,
+      cases: [{ ...vide, col: 0, rect: { x: 0, y: 0, largeur: 150, hauteur: 100 } }, { ...vide, col: 1, rect: { x: 250, y: 0, largeur: 150, hauteur: 100 } }],
+    };
+    const r = rangerDansTableau(t, [ligne(160, 40, '1200')]); // centre (190, 50) : entre les deux cases
+    expect(r.cases.map((c) => c.texte)).toEqual(['1200', '']);
   });
 
   it('plus grand groupe : les cases qui se touchent', () => {

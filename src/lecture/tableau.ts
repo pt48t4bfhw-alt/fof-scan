@@ -113,6 +113,16 @@ export function tableauDepuisCases(rects: Rect[], largeurPage: number, hauteurPa
     const bas = Math.max(rang + 1, plusProche(ys, r.y + r.hauteur));
     return { rang, col, rangs: bas - rang, cols: fin - col, rect: r, texte: '', confiance: 1, corrige: false };
   });
+  // une case écartée (écriture au stylo qui déborde sur les traits) est recréée d'après la grille
+  const couverte = Array.from({ length: rangs }, () => Array<boolean>(cols).fill(false));
+  for (const c of cases) {
+    for (let r = c.rang; r < Math.min(rangs, c.rang + c.rangs); r++) for (let k = c.col; k < Math.min(cols, c.col + c.cols); k++) couverte[r][k] = true;
+  }
+  for (let r = 0; r < rangs; r++) for (let k = 0; k < cols; k++) {
+    if (couverte[r][k]) continue;
+    const rectCase = { x: xs[k], y: ys[r], largeur: xs[k + 1] - xs[k], hauteur: ys[r + 1] - ys[r] };
+    cases.push({ rang: r, col: k, rangs: 1, cols: 1, rect: rectCase, texte: '', confiance: 1, corrige: false });
+  }
   cases.sort((a, b) => a.rang - b.rang || a.col - b.col);
   return { rect, rangs, cols, cases };
 }
@@ -126,11 +136,22 @@ export function dansLeTableau(t: Tableau, l: LigneLue): boolean {
   return contient(t.rect, centre(l));
 }
 
-/** Range chaque ligne dans la case qui contient son centre (plusieurs lignes : une par rangée). */
+/** Distance d'un point à un rectangle (0 dedans). */
+const distanceA = (r: Rect, p: { x: number; y: number }) =>
+  Math.hypot(Math.max(r.x - p.x, 0, p.x - r.x - r.largeur), Math.max(r.y - p.y, 0, p.y - r.y - r.hauteur));
+
+/**
+ * Range chaque ligne dans la case qui contient son centre (plusieurs lignes : une par rangée). Une ligne
+ * du tableau qui ne tombe dans aucune case (sur un trait épais) va dans la plus proche : rien n'est perdu.
+ */
 export function rangerDansTableau(t: Tableau, lignes: LigneLue[]): Tableau {
   const parCase = t.cases.map(() => [] as LigneLue[]);
   for (const l of lignes) {
-    const k = t.cases.findIndex((c) => contient(c.rect, centre(l)));
+    const p = centre(l);
+    let k = t.cases.findIndex((c) => contient(c.rect, p));
+    if (k < 0 && t.cases.length && dansLeTableau(t, l)) {
+      k = t.cases.reduce((m, c, i) => (distanceA(c.rect, p) < distanceA(t.cases[m].rect, p) ? i : m), 0);
+    }
     if (k >= 0) parCase[k].push(l);
   }
   return {

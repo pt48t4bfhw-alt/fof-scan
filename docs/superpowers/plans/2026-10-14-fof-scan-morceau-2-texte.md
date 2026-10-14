@@ -2602,6 +2602,8 @@ Run : `npx vitest run tests/lecture-photos.test.ts` — Expected : PASS ; le bil
 - textes imprimés lisibles.
 Si le reçu n'est pas en mode tableau, ajuster les réglages de `tableau.ts` (tolérance, `PART_PLEINE_MIN`) en gardant les tests de la Task 6 au vert, et relancer.
 
+> **Fait à l'exécution (14/10/2026)** : sur le reçu p6, les cases VALEUR de « 1200 » et « 302400 » étaient écartées (l'écriture déborde sur les traits) et ces lignes se perdaient. Ajouté dans `tableau.ts` : `tableauDepuisCases` recrée toute case manquante de la grille d'après les bords connus ; `rangerDansTableau` met une ligne du cadre qui ne tombe dans aucune case dans la case la plus proche. Deux tests ajoutés à `tests/tableau.test.ts`. Résultat : p6 = 252 / 1200 / 302400, p7 = 44 / 1200 / 40800 ; limite : le repérage *tiny* rate parfois une grande écriture au stylo (nom du vendeur) ou un tout petit nombre (« 01 »).
+
 - [ ] **Step 3 : retirer les essais jetables**
 
 ```bash
