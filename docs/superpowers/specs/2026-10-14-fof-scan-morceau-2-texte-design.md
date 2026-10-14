@@ -87,9 +87,11 @@ sans traits (ils deviennent une liste de lignes), PDF → Word / Excel
    cases sont les rectangles formés par leurs croisements. Une case qui couvre
    plusieurs colonnes ou rangées reste une seule case (cellule fusionnée).
 2. **Rangement** : chaque ligne lue va dans la case qui contient son centre ;
-   plusieurs lignes d'une même case sont jointes par un retour à la ligne. Une
-   ligne lue qui chevauche plusieurs cases est redécoupée selon les traits
-   avant lecture.
+   plusieurs lignes d'une même case sont jointes par un retour à la ligne.
+   Seul le plus grand groupe de cases qui se touchent forme le tableau (une
+   case à cocher isolée est écartée) ; une case coupée par le bord de la photo
+   reste fermée. Le repérage des lignes s'arrête de lui-même aux traits : pas de
+   redécoupage (essai sur le reçu SCOOPAB).
 3. **Hors tableau** : le texte au-dessus et au-dessous reste à sa place
    (paragraphes avant / après dans Word, rangées avant / après dans Excel).
 4. **Cahiers** : si la grande majorité des cases repérées sont vides (carreaux
