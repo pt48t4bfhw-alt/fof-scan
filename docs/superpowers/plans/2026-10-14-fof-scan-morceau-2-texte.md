@@ -3171,6 +3171,8 @@ git add src/ecrans/PageLue.tsx src/ecrans/TexteEcran.tsx src/styles.css
 git commit -m "Écran Texte : correction ligne par ligne et case par case, sorties Word, Excel et Copier"
 ```
 
+> **Fait à l'exécution (14/10/2026)**, après essai dans le navigateur : (1) `autoFocus` ne marche pas sur un champ ajouté après coup → curseur placé par `ref` + `useEffect`, et la feuille d'une case devient le composant `EditionCase` ; (2) un morceau de ligne écrite à la verticale (référence en marge des reçus) s'affichait énorme → tourné d'un quart de tour vers la droite ; (3) « Copier » refusé par certains navigateurs → `src/navigateur/pressePapiers.ts` avec méthode de secours (champ caché + `execCommand('copy')`). Vérifié : grille du reçu, case « 04 » et ligne « Bouda » corrigées et conservées, Word et Excel (toutes les parties XML valides, corrections présentes), « Texte copié ».
+
 ---
 
 ### Task 16 : Vérification complète, version construite, documentation

@@ -85,4 +85,12 @@ input[type=search], input[type=text] { font: inherit; width: 100%; padding: 12px
 .diapo img { width: 100%; height: 100%; object-fit: contain; display: block; transform-origin: center; -webkit-user-drag: none; user-select: none; }
 .carte { background: var(--surface); border-radius: var(--rayon); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .carte p { margin: 0; }
-.liste-brute { margin: 0; padding-left: 18px; }
+.carte-ligne { display: flex; flex-direction: column; gap: 4px; background: var(--surface); border-radius: 10px; padding: 6px; }
+.morceau { display: block; max-width: 100%; height: auto; border-radius: 6px; background: #fff; }
+.texte-lu { text-align: left; background: transparent; padding: 6px 8px; white-space: pre-wrap; font: inherit; color: var(--texte);
+  border-radius: 8px; width: 100%; }
+textarea.texte-lu { border: 1px solid var(--accent); background: var(--fond); resize: vertical; }
+.texte-lu.douteux, .case-tableau.douteux { color: #ffb347; outline: 1px solid #ffb34766; }
+.defile { overflow-x: auto; }
+.grille-tableau { display: grid; gap: 2px; background: var(--surface-2); padding: 2px; border-radius: 8px; min-width: min-content; }
+.case-tableau { background: var(--surface); border-radius: 4px; padding: 6px; text-align: left; white-space: pre-wrap; font-size: 14px; min-height: 36px; }
