@@ -1,3 +1,5 @@
+import type { PageBrute } from '../lecture/lecteur';
+import { choisirMode, rangerDansTableau, trouverTableau } from '../lecture/tableau';
 import { detecterCoins, masqueDesBords } from './detection';
 import { appliquerFiltre } from './filtres';
 import type { CV } from './opencv';
@@ -5,7 +7,10 @@ import type { Reponse, Requete } from './protocole';
 import { redresser } from './redressement';
 import type { Coins, Img } from './types';
 
-export function gererRequete(cv: CV, r: Requete): Reponse {
+/** Les requêtes traitées tout de suite, sans le lecteur de texte. */
+export type RequeteSimple = Extract<Requete, { type: 'preparer' | 'detecter' | 'bords' | 'traiter' }>;
+
+export function gererRequete(cv: CV, r: RequeteSimple): Reponse {
   try {
     switch (r.type) {
       case 'preparer':
@@ -37,5 +42,24 @@ export async function gererDetection(cv: CV, ia: DetecteurDeCoins | null, r: Ext
     return { id: r.id, ok: true, type: 'detecter', coins: coinsIA ?? detecterCoins(cv, r.img) };
   } catch (e) {
     return { id: r.id, ok: false, erreur: e instanceof Error ? e.message : `Erreur de détection (${String(e)})` };
+  }
+}
+
+/** Ce qu'il faut savoir du lecteur de texte : il lit une page et la rend remise d'aplomb. */
+export interface LecteurDePage { lire(cv: CV, img: Img): Promise<PageBrute> }
+
+/** Lecture d'une page : lignes lues, tableau repéré sur la même image, choix Texte / Tableau. */
+export async function gererLecture(cv: CV, lecteur: LecteurDePage, r: Extract<Requete, { type: 'lire' }>): Promise<Reponse> {
+  try {
+    const lu = await lecteur.lire(cv, r.img);
+    const lignes = lu.lignes.map((l) => ({ ...l, corrige: false }));
+    const cadre = trouverTableau(cv, lu.img);
+    const tableau = cadre ? rangerDansTableau(cadre, lignes) : null;
+    return {
+      id: r.id, ok: true, type: 'lire',
+      resultat: { sens: lu.sens, largeur: lu.img.width, hauteur: lu.img.height, mode: choisirMode(tableau), lignes, tableau },
+    };
+  } catch (e) {
+    return { id: r.id, ok: false, erreur: e instanceof Error ? e.message : `Erreur de lecture (${String(e)})` };
   }
 }

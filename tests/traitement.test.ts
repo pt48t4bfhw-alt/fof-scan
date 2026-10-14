@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { chargerOpenCV, type CV } from '../src/traitement/opencv';
-import { gererDetection, gererRequete } from '../src/traitement/coeur';
+import { gererDetection, gererRequete, type RequeteSimple } from '../src/traitement/coeur';
 import { Traitement } from '../src/traitement/client';
 import type { PortWorker, Reponse, Requete } from '../src/traitement/protocole';
 import { REGLAGES_NEUTRES, type Coins } from '../src/traitement/types';
@@ -76,7 +76,8 @@ describe('gererDetection (IA d\'abord, méthode classique en repli)', () => {
 
 describe('Traitement (client)', () => {
   it('associe chaque réponse à sa requête', async () => {
-    const t = new Traitement(new FauxWorker((r) => gererRequete(cv, r)));
+    // ce test n'envoie que des requêtes simples (ni lecture ni libération)
+    const t = new Traitement(new FauxWorker((r) => gererRequete(cv, r as RequeteSimple)));
     await t.preparer();
     const [coins, vide] = await Promise.all([t.detecter(scene()), t.detecter(imageUnie(400, 300, 120))]);
     expect(coins).not.toBeNull();

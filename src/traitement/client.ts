@@ -1,3 +1,4 @@
+import type { ResultatLecture } from '../lecture/modele';
 import type { PortWorker, Reponse, Requete } from './protocole';
 import { REGLAGES_NEUTRES, type Coins, type Filtre, type Img, type Reglages, type Rotation } from './types';
 
@@ -44,6 +45,18 @@ export class Traitement {
     if (!r.ok) throw new Error(r.erreur);
     if (r.type !== 'traiter') throw new Error('Réponse inattendue du traitement');
     return r.img;
+  }
+
+  async lire(img: Img): Promise<ResultatLecture> {
+    const r = await this.envoyer({ id: this.suivant++, type: 'lire', img }, [img.data.buffer]);
+    if (!r.ok) throw new Error(r.erreur);
+    if (r.type !== 'lire') throw new Error('Réponse inattendue du traitement');
+    return r.resultat;
+  }
+
+  async liberer(): Promise<void> {
+    const r = await this.envoyer({ id: this.suivant++, type: 'liberer' });
+    if (!r.ok) throw new Error(r.erreur);
   }
 }
 
