@@ -2014,7 +2014,7 @@ et dans le manifeste : `JSON.stringify({ application: APPLICATION, version: VERS
 
 - [ ] **Step 6 : vérifier la réussite**
 
-Run : `npx vitest run tests/depot.test.ts tests/sauvegarde.test.ts` puis `npx tsc --noEmit` — Expected : PASS (l'ancien test « version 1 » passe aussi : il monte jusqu'à 3).
+Run : `npx vitest run tests/depot.test.ts tests/sauvegarde.test.ts` puis `npx tsc --noEmit` — Expected : PASS (l'ancien test « version 1 » passe aussi : il monte jusqu'à 3). Deux tests existants comparent tout le contenu : y ajouter `lectures: []` (`depot.test.ts`, « importe sans dupliquer… » ; `sauvegarde.test.ts`, « ancienne version… »).
 
 - [ ] **Step 7 : commit**
 

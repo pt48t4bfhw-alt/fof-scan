@@ -58,8 +58,8 @@ export function Accueil({ depot, nav, dossierId }: { depot: Depot; nav: Nav; dos
   async function sauvegarder() {
     setMenu(false);
     try {
-      const { documents, pages, dossiers: tous } = await depot.toutLire();
-      const zip = creerSauvegarde(documents, pages, tous);
+      const { documents, pages, dossiers: tous, lectures } = await depot.toutLire();
+      const zip = creerSauvegarde(documents, pages, tous, lectures);
       setPret([new File([zip], nomSauvegarde(new Date()), { type: 'application/zip' })]);
     } catch (e) {
       nav.signaler(messageErreur(e));
@@ -69,8 +69,8 @@ export function Accueil({ depot, nav, dossierId }: { depot: Depot; nav: Nav; dos
   async function restaurer(fichier: File) {
     setOccupe('Restauration…');
     try {
-      const { documents, pages, dossiers: tous } = lireSauvegarde(new Uint8Array(await fichier.arrayBuffer()));
-      const { ajoutes, ignores } = await depot.importer(documents, pages, tous);
+      const { documents, pages, dossiers: tous, lectures } = lireSauvegarde(new Uint8Array(await fichier.arrayBuffer()));
+      const { ajoutes, ignores } = await depot.importer(documents, pages, tous, lectures);
       nav.signaler(`${ajoutes} document(s) restauré(s)${ignores ? `, ${ignores} déjà présent(s)` : ''}.`);
       await recharger();
     } catch (e) {

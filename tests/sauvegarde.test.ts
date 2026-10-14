@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ouvrirDepot } from '../src/rangement/depot';
 import { creerSauvegarde, lireSauvegarde, nomSauvegarde } from '../src/rangement/sauvegarde';
 import { pageFactice } from './aides/jpeg';
+import { lectureFactice } from './aides/lecture';
 
 describe('sauvegarde', () => {
   it('nomme le fichier avec la date', () => {
@@ -34,7 +35,21 @@ describe('sauvegarde', () => {
     const ancien = zipSync({
       'manifeste.json': strToU8(JSON.stringify({ application: 'FOF Scan', version: 1, documents: [], pages: [] })),
     });
-    expect(lireSauvegarde(ancien)).toEqual({ documents: [], pages: [], dossiers: [] });
+    expect(lireSauvegarde(ancien)).toEqual({ documents: [], pages: [], dossiers: [], lectures: [] });
+  });
+
+  it('emporte les lectures ; sans lectures, la sauvegarde se relit quand même', async () => {
+    const source = await ouvrirDepot(`s-${crypto.randomUUID()}`);
+    const doc = await source.creerDocument('Reçu');
+    const p = await source.ajouterPage(doc.id, pageFactice());
+    await source.enregistrerLecture(lectureFactice(p.id, doc.id, '252'));
+    const tout = await source.toutLire();
+    const relu = lireSauvegarde(creerSauvegarde(tout.documents, tout.pages, tout.dossiers, tout.lectures));
+    expect(relu.lectures.map((l) => l.lignes[0].texte)).toEqual(['252']);
+    const cible = await ouvrirDepot(`c-${crypto.randomUUID()}`);
+    await cible.importer(relu.documents, relu.pages, relu.dossiers, relu.lectures);
+    expect((await cible.lireLectures(doc.id))[0].lignes[0].texte).toBe('252');
+    expect(lireSauvegarde(creerSauvegarde(tout.documents, tout.pages, tout.dossiers)).lectures).toEqual([]);
   });
 
   it('refuse un fichier qui n\'est pas une sauvegarde', () => {

@@ -1,4 +1,5 @@
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import type { LecturePage } from '../lecture/modele';
 import type { DocumentScan, DossierScan, PageScan } from './modele';
 
 const VERSION = 1;
@@ -13,8 +14,10 @@ export function nomSauvegarde(d: Date): string {
   return `FOF-Scan-sauvegarde-${d.getFullYear()}-${deux(d.getMonth() + 1)}-${deux(d.getDate())}.zip`;
 }
 
-/** Un zip : `manifeste.json` (dossiers, documents et pages sans les images) + toutes les images JPEG. */
-export function creerSauvegarde(documents: DocumentScan[], pages: PageScan[], dossiers: DossierScan[] = []): Uint8Array {
+/** Un zip : `manifeste.json` (dossiers, documents, pages sans les images, lectures) + toutes les images JPEG. */
+export function creerSauvegarde(
+  documents: DocumentScan[], pages: PageScan[], dossiers: DossierScan[] = [], lectures: LecturePage[] = [],
+): Uint8Array {
   const fichiers: Record<string, Uint8Array> = {};
   const pagesManifeste = pages.map((p) => {
     const copie: Record<string, unknown> = { ...p };
@@ -24,12 +27,12 @@ export function creerSauvegarde(documents: DocumentScan[], pages: PageScan[], do
     }
     return copie;
   });
-  fichiers['manifeste.json'] = strToU8(JSON.stringify({ application: APPLICATION, version: VERSION, dossiers, documents, pages: pagesManifeste }));
+  fichiers['manifeste.json'] = strToU8(JSON.stringify({ application: APPLICATION, version: VERSION, dossiers, documents, pages: pagesManifeste, lectures }));
   // Les JPEG ne se compressent plus : on range sans compresser, c'est plus rapide.
   return zipSync(fichiers, { level: 0 });
 }
 
-export function lireSauvegarde(zip: Uint8Array): { documents: DocumentScan[]; pages: PageScan[]; dossiers: DossierScan[] } {
+export function lireSauvegarde(zip: Uint8Array): { documents: DocumentScan[]; pages: PageScan[]; dossiers: DossierScan[]; lectures: LecturePage[] } {
   let fichiers: Record<string, Uint8Array>;
   try {
     fichiers = unzipSync(zip);
@@ -50,6 +53,6 @@ export function lireSauvegarde(zip: Uint8Array): { documents: DocumentScan[]; pa
     }
     return page as unknown as PageScan;
   });
-  // les sauvegardes faites avant les dossiers n'en ont pas
-  return { documents: manifeste.documents, pages, dossiers: manifeste.dossiers ?? [] };
+  // les sauvegardes faites avant les dossiers ou avant la lecture du texte n'en ont pas
+  return { documents: manifeste.documents, pages, dossiers: manifeste.dossiers ?? [], lectures: manifeste.lectures ?? [] };
 }

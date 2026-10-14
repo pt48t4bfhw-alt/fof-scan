@@ -3,6 +3,7 @@ import { openDB } from 'idb';
 import { describe, expect, it } from 'vitest';
 import { ErreurStockagePlein, estErreurQuota, ouvrirDepot } from '../src/rangement/depot';
 import { pageFactice } from './aides/jpeg';
+import { lectureFactice } from './aides/lecture';
 
 function depotNeuf() {
   let t = 1000;
@@ -73,7 +74,7 @@ describe('Depot', () => {
     const cible = await depotNeuf();
     expect(await cible.importer(documents, pages, dossiers)).toEqual({ ajoutes: 1, ignores: 0 });
     expect(await cible.importer(documents, pages, dossiers)).toEqual({ ajoutes: 0, ignores: 1 });
-    expect(await cible.toutLire()).toEqual({ documents, pages, dossiers });
+    expect(await cible.toutLire()).toEqual({ documents, pages, dossiers, lectures: [] });
   });
 
   it('fusionne plusieurs documents dans le premier coché, dans l\'ordre où ils ont été cochés', async () => {
@@ -146,6 +147,48 @@ describe('Depot', () => {
     const d = await ouvrirDepot(nom);
     expect((await d.listerDocuments()).map((x) => x.nom)).toEqual(['Vieux scan']);
     expect(await d.listerDossiers()).toEqual([]);
+  });
+
+  it('lectures : relues par document, remplacées, effacées avec leur page ou leur document', async () => {
+    const d = await depotNeuf();
+    const doc = await d.creerDocument('Reçus');
+    const p1 = await d.ajouterPage(doc.id, pageFactice());
+    const p2 = await d.ajouterPage(doc.id, pageFactice());
+    await d.enregistrerLecture(lectureFactice(p1.id, doc.id, 'un'));
+    await d.enregistrerLecture(lectureFactice(p2.id, doc.id, 'deux'));
+    await d.enregistrerLecture(lectureFactice(p2.id, doc.id, 'deux corrigé'));
+    const lues = await d.lireLectures(doc.id);
+    expect(lues.map((l) => l.lignes[0].texte).sort()).toEqual(['deux corrigé', 'un']);
+    await d.supprimerPage(p1.id);
+    expect((await d.lireLectures(doc.id)).map((l) => l.pageId)).toEqual([p2.id]);
+    await d.supprimerDocument(doc.id);
+    expect(await d.lireLectures(doc.id)).toEqual([]);
+  });
+
+  it('fusionner emporte les lectures des pages déplacées', async () => {
+    const d = await depotNeuf();
+    const a = await d.creerDocument('A');
+    const b = await d.creerDocument('B');
+    const pb = await d.ajouterPage(b.id, pageFactice());
+    await d.enregistrerLecture(lectureFactice(pb.id, b.id));
+    await d.fusionner([a.id, b.id]);
+    expect((await d.lireLectures(a.id)).map((l) => l.pageId)).toEqual([pb.id]);
+  });
+
+  it('une mémoire de la version 2 (sans lectures) s\'ouvre sans perte', async () => {
+    const nom = `v2-${crypto.randomUUID()}`;
+    const ancien = await openDB(nom, 2, {
+      upgrade(base) {
+        base.createObjectStore('documents', { keyPath: 'id' });
+        base.createObjectStore('pages', { keyPath: 'id' }).createIndex('parDocument', 'documentId');
+        base.createObjectStore('dossiers', { keyPath: 'id' });
+      },
+    });
+    await ancien.put('documents', { id: 'x', nom: 'Scan v2', cree: 1, modifie: 1, pages: [] });
+    ancien.close();
+    const d = await ouvrirDepot(nom);
+    expect((await d.listerDocuments()).map((x) => x.nom)).toEqual(['Scan v2']);
+    expect(await d.lireLectures('x')).toEqual([]);
   });
 
   it('reconnaît une erreur de mémoire pleine', () => {

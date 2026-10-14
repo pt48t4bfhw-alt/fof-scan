@@ -1,10 +1,12 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
+import type { LecturePage } from '../lecture/modele';
 import type { DocumentScan, DossierScan, NouvellePage, PageScan } from './modele';
 
 interface Schema extends DBSchema {
   documents: { key: string; value: DocumentScan };
   pages: { key: string; value: PageScan; indexes: { parDocument: string } };
   dossiers: { key: string; value: DossierScan };
+  lectures: { key: string; value: LecturePage; indexes: { parDocument: string } };
 }
 
 export class ErreurStockagePlein extends Error {
@@ -28,14 +30,15 @@ async function proteger<T>(f: () => Promise<T>): Promise<T> {
 }
 
 export async function ouvrirDepot(nomBase = 'fof-scan', horloge: () => number = Date.now): Promise<Depot> {
-  // Version 2 : ajout des dossiers. Une mémoire de la version 1 garde ses documents (hors dossier).
-  const db = await openDB<Schema>(nomBase, 2, {
+  // Version 2 : dossiers. Version 3 : lectures du texte (une par page). Rien n'est perdu en montant de version.
+  const db = await openDB<Schema>(nomBase, 3, {
     upgrade(base, ancienneVersion) {
       if (ancienneVersion < 1) {
         base.createObjectStore('documents', { keyPath: 'id' });
         base.createObjectStore('pages', { keyPath: 'id' }).createIndex('parDocument', 'documentId');
       }
       if (ancienneVersion < 2) base.createObjectStore('dossiers', { keyPath: 'id' });
+      if (ancienneVersion < 3) base.createObjectStore('lectures', { keyPath: 'pageId' }).createIndex('parDocument', 'documentId');
     },
   });
   return new Depot(db, horloge);
@@ -139,8 +142,19 @@ export class Depot {
     });
   }
 
+  // --- lectures du texte ---
+
+  lireLectures(documentId: string): Promise<LecturePage[]> {
+    return this.db.getAllFromIndex('lectures', 'parDocument', documentId);
+  }
+
+  /** Enregistre (ou remplace) la lecture d'une page, corrections comprises. */
+  enregistrerLecture(l: LecturePage): Promise<void> {
+    return proteger(async () => { await this.db.put('lectures', l); });
+  }
+
   async supprimerPage(pageId: string): Promise<void> {
-    const tx = this.db.transaction(['documents', 'pages'], 'readwrite');
+    const tx = this.db.transaction(['documents', 'pages', 'lectures'], 'readwrite');
     const page = await tx.objectStore('pages').get(pageId);
     if (page) {
       const doc = await tx.objectStore('documents').get(page.documentId);
@@ -150,6 +164,7 @@ export class Depot {
         await tx.objectStore('documents').put(doc);
       }
       await tx.objectStore('pages').delete(pageId);
+      await tx.objectStore('lectures').delete(pageId);
     }
     await tx.done;
   }
@@ -164,10 +179,12 @@ export class Depot {
   }
 
   async supprimerDocument(id: string): Promise<void> {
-    const tx = this.db.transaction(['documents', 'pages'], 'readwrite');
+    const tx = this.db.transaction(['documents', 'pages', 'lectures'], 'readwrite');
     const cles = await tx.objectStore('pages').index('parDocument').getAllKeys(id);
+    const lectures = await tx.objectStore('lectures').index('parDocument').getAllKeys(id);
     await Promise.all([
       ...cles.map((k) => tx.objectStore('pages').delete(k)),
+      ...lectures.map((k) => tx.objectStore('lectures').delete(k)),
       tx.objectStore('documents').delete(id),
       tx.done,
     ]);
@@ -181,7 +198,7 @@ export class Depot {
     if (ids.length < 2) throw new Error('Il faut au moins deux documents à fusionner.');
     const [cibleId, ...autres] = ids;
     await proteger(async () => {
-      const tx = this.db.transaction(['documents', 'pages'], 'readwrite');
+      const tx = this.db.transaction(['documents', 'pages', 'lectures'], 'readwrite');
       const cible = await tx.objectStore('documents').get(cibleId);
       if (!cible) throw new Error('Document introuvable');
       for (const id of autres) {
@@ -191,6 +208,8 @@ export class Depot {
           const page = await tx.objectStore('pages').get(pageId);
           if (!page) continue;
           await tx.objectStore('pages').put({ ...page, documentId: cibleId });
+          const lecture = await tx.objectStore('lectures').get(pageId);
+          if (lecture) await tx.objectStore('lectures').put({ ...lecture, documentId: cibleId });
           cible.pages.push(pageId);
         }
         await tx.objectStore('documents').delete(id);
@@ -202,11 +221,12 @@ export class Depot {
     return cibleId;
   }
 
-  async toutLire(): Promise<{ documents: DocumentScan[]; pages: PageScan[]; dossiers: DossierScan[] }> {
+  async toutLire(): Promise<{ documents: DocumentScan[]; pages: PageScan[]; dossiers: DossierScan[]; lectures: LecturePage[] }> {
     return {
       documents: await this.db.getAll('documents'),
       pages: await this.db.getAll('pages'),
       dossiers: await this.db.getAll('dossiers'),
+      lectures: await this.db.getAll('lectures'),
     };
   }
 
@@ -214,11 +234,13 @@ export class Depot {
    * Restauration : ajoute les dossiers et documents absents (rien n'est dupliqué). Un document
    * dont le dossier n'existe ni ici ni dans la sauvegarde revient à l'accueil.
    */
-  async importer(documents: DocumentScan[], pages: PageScan[], dossiers: DossierScan[] = []): Promise<{ ajoutes: number; ignores: number }> {
+  async importer(
+    documents: DocumentScan[], pages: PageScan[], dossiers: DossierScan[] = [], lectures: LecturePage[] = [],
+  ): Promise<{ ajoutes: number; ignores: number }> {
     let ajoutes = 0;
     let ignores = 0;
     await proteger(async () => {
-      const tx = this.db.transaction(['documents', 'pages', 'dossiers'], 'readwrite');
+      const tx = this.db.transaction(['documents', 'pages', 'dossiers', 'lectures'], 'readwrite');
       for (const dossier of dossiers) {
         if (!(await tx.objectStore('dossiers').get(dossier.id))) await tx.objectStore('dossiers').put(dossier);
       }
@@ -227,6 +249,7 @@ export class Depot {
         const dossierConnu = !doc.dossierId || (await tx.objectStore('dossiers').get(doc.dossierId));
         await tx.objectStore('documents').put(dossierConnu ? doc : { ...doc, dossierId: null });
         for (const p of pages.filter((x) => x.documentId === doc.id)) await tx.objectStore('pages').put(p);
+        for (const l of lectures.filter((x) => x.documentId === doc.id)) await tx.objectStore('lectures').put(l);
         ajoutes++;
       }
       await tx.done;
