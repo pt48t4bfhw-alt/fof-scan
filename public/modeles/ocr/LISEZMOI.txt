@@ -1,0 +1,17 @@
+Lecteur de texte de FOF Scan
+============================
+
+Modèles officiels de PaddleOCR (PaddlePaddle, https://github.com/PaddlePaddle/PaddleOCR), non modifiés,
+au format ONNX (archives « *_onnx_infer.tar » du serveur PaddleX) :
+
+  reperage-ppocrv6-tiny.onnx   = PP-OCRv6_tiny_det/inference.onnx   (repère les lignes de texte)
+    SHA-256 : 193BAB7A04FCA699A6C82E6ABB5B81BDB28177F0ABD4062552B04908DAFB19F8
+  lecture-ppocrv6-small.onnx   = PP-OCRv6_small_rec/inference.onnx  (lit chaque ligne)
+    SHA-256 : 5435FD747C9E0EFE15A96D0B378D5BD157E9492ED8FD80EDF08F30D02FA24634
+  dictionnaire-ppocrv6.txt     = liste « character_dict » de PP-OCRv6_small_rec/inference.yml,
+                                 un caractère par ligne (18 708 caractères, accents compris)
+    SHA-256 : B5F2BFE2BDD9448429E3E82B51C789775D9B42F2403D082B00662EB77E401C5D
+
+Licence : Apache License 2.0 (texte complet dans LICENCE-PaddleOCR.txt).
+Fichiers produits par scripts/preparer-lecteur.mjs. Téléchargés par le téléphone à la première
+lecture, puis gardés pour fonctionner sans internet. Ils ne font pas partie du précache.

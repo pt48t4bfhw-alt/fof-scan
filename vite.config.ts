@@ -31,6 +31,8 @@ export default defineConfig(({ command, isPreview }) => ({
       workbox: {
         // onnx : le modèle DocAligner ; wasm : le moteur onnxruntime
         globPatterns: ['**/*.{js,mjs,css,html,png,wasm,onnx}'],
+        // le lecteur de texte (23 Mo) se télécharge à la demande, pas à l'installation
+        globIgnores: ['**/modeles/ocr/**'],
         // OpenCV (~10 Mo) et le moteur onnxruntime (~14 Mo) : sans cette limite, ils ne seraient pas gardés hors ligne.
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024,
       },
