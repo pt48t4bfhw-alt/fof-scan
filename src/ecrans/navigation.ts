@@ -19,6 +19,8 @@ export type Ecran =
   | { nom: 'recadrage'; lot: Lot }
   | { nom: 'filtres'; lot: Lot }
   | { nom: 'document'; id: string }
+  /** Lecture du texte d'un document, correction, Word / Excel. */
+  | { nom: 'texte'; id: string }
   /** Un document (depuis son écran) ou plusieurs (cochés sur l'accueil). */
   | { nom: 'export'; ids: string[] };
 

@@ -83,3 +83,6 @@ input[type=search], input[type=text] { font: inherit; width: 100%; padding: 12px
 .piste { display: flex; height: 100%; will-change: transform; }
 .diapo { flex: none; width: 100%; height: 100%; overflow: hidden; }
 .diapo img { width: 100%; height: 100%; object-fit: contain; display: block; transform-origin: center; -webkit-user-drag: none; user-select: none; }
+.carte { background: var(--surface); border-radius: var(--rayon); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.carte p { margin: 0; }
+.liste-brute { margin: 0; padding-left: 18px; }

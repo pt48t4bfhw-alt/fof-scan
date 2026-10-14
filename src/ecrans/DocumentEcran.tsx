@@ -128,6 +128,7 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
       </div>
       <div class="barre-bas">
         <button onClick={() => setAjout(true)}>Ajouter</button>
+        <button onClick={() => nav.aller({ nom: 'texte', id })} disabled={!pages.length}>Texte</button>
         <button class="principal" onClick={() => nav.aller({ nom: 'export', ids: [id] })} disabled={!pages.length}>Exporter</button>
       </div>
       <input ref={entreeImport} type="file" accept="image/*" multiple hidden

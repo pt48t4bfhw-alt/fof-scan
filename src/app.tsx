@@ -6,6 +6,7 @@ import { Recadrage } from './ecrans/Recadrage';
 import { Filtres } from './ecrans/Filtres';
 import { DocumentEcran } from './ecrans/DocumentEcran';
 import { ExportEcran } from './ecrans/ExportEcran';
+import { TexteEcran } from './ecrans/TexteEcran';
 import { MiseAJourAuto } from './ecrans/MiseAJourAuto';
 import { demanderStockagePermanent } from './navigateur/stockage';
 import { ouvrirDepot, type Depot } from './rangement/depot';
@@ -44,6 +45,7 @@ export function App() {
           {ecran.nom === 'filtres' && <Filtres lot={ecran.lot} depot={depot} nav={nav} />}
           {ecran.nom === 'document' && <DocumentEcran id={ecran.id} depot={depot} nav={nav} />}
           {ecran.nom === 'export' && <ExportEcran ids={ecran.ids} depot={depot} nav={nav} />}
+          {ecran.nom === 'texte' && <TexteEcran id={ecran.id} depot={depot} nav={nav} />}
         </>
       )}
       <MiseAJourAuto surAccueil={ecran.nom === 'accueil'} />
