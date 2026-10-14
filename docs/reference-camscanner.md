@@ -86,8 +86,8 @@ actuelle resterait en secours. **Demande l'accord de l'utilisateur avant tout t�
 
 | CamScanner | FOF Scan |
 |---|---|
-| Reconnaissance du texte (OCR) | prévu : morceau 2 |
-| PDF ↔ Word / Excel | prévu : morceaux 2 et 3 |
+| Reconnaissance du texte (OCR) | ✅ morceau 2 : PaddleOCR PP-OCRv6 sur le téléphone (téléchargé une fois, 23 Mo), correction ligne par ligne |
+| PDF ↔ Word / Excel | 🟡 scan → Word / Excel fait (morceau 2) ; PDF ↔ Word / Excel : morceau 3 |
 | Signature électronique | ❌ à prévoir |
 | Annotations, filigrane, masquage (mosaïque) | ❌ à prévoir |
 | Scan de pièce d'identité (recto/verso sur une page) | ❌ à prévoir |
