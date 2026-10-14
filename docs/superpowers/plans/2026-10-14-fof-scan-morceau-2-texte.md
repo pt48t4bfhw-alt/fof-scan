@@ -169,11 +169,14 @@ export type ResultatLecture = Pick<LecturePage, 'sens' | 'largeur' | 'hauteur' |
 /** En dessous, la ligne (ou la case) est signalée en orange. */
 export const CONFIANCE_DOUTEUSE = 0.8;
 
-/** Empreinte rapide d'une image JPEG : taille, nombre d'octets et FNV-1a sur un octet sur 61. */
+/**
+ * Empreinte d'une image JPEG : taille, nombre d'octets et FNV-1a sur tous les octets (quelques
+ * millièmes de seconde pour une page ; un échantillon raterait un simple changement de teinte).
+ */
 export function empreinte(im: ImageJpeg): string {
   let h = 0x811c9dc5;
   const o = im.octets;
-  for (let i = 0; i < o.length; i += 61) {
+  for (let i = 0; i < o.length; i++) {
     h ^= o[i];
     h = Math.imul(h, 0x01000193) >>> 0;
   }
