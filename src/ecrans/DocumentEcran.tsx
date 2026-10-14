@@ -6,13 +6,15 @@ import type { DocumentScan, PageScan } from '../rangement/modele';
 import { REGLAGES_NEUTRES } from '../traitement/types';
 import { importerFichiers } from './importer';
 import { messageErreur, type Nav } from './navigation';
+import { Visionneuse } from './Visionneuse';
 
 export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; nav: Nav }) {
   const [doc, setDoc] = useState<DocumentScan | null>(null);
   const [nom, setNom] = useState('');
   const [pages, setPages] = useState<PageScan[]>([]);
   const [urls, setUrls] = useState<Record<string, string>>({});
-  const [choisie, setChoisie] = useState<PageScan | null>(null);
+  /** Page ouverte en grand (son rang), ou rien. */
+  const [enGrand, setEnGrand] = useState<number | null>(null);
   const [ajout, setAjout] = useState(false);
   const [occupe, setOccupe] = useState(false);
   // Changer cette clé recrée la grille : Sortable déplace les éléments lui-même, Preact doit repartir de zéro.
@@ -70,7 +72,6 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
   }
 
   async function supprimerPage(p: PageScan) {
-    setChoisie(null);
     if (!confirm('Supprimer cette page ?')) return;
     await depot.supprimerPage(p.id);
     await charger();
@@ -115,11 +116,11 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
           onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur(); }} />
         <button class="danger" onClick={supprimerDocument}>Supprimer</button>
       </header>
-      <p class="doux">{pages.length} page{pages.length > 1 ? 's' : ''} · appui long sur une page pour la déplacer</p>
+      <p class="doux">{pages.length} page{pages.length > 1 ? 's' : ''} · toucher une page pour la voir en grand, appui long pour la déplacer</p>
       {occupe && <div class="progression indeterminee"><div /></div>}
       <div class="grille" key={cle} ref={grille}>
         {pages.map((p, k) => (
-          <div class="case" key={p.id} data-id={p.id} onClick={() => setChoisie(p)}>
+          <div class="case" key={p.id} data-id={p.id} onClick={() => setEnGrand(k)}>
             {urls[p.id] && <img src={urls[p.id]} alt={`Page ${k + 1}`} />}
             <span class="numero">{k + 1}</span>
           </div>
@@ -131,15 +132,9 @@ export function DocumentEcran({ id, depot, nav }: { id: string; depot: Depot; na
       </div>
       <input ref={entreeImport} type="file" accept="image/*" multiple hidden
         onChange={(e) => { const f = Array.from(e.currentTarget.files ?? []); e.currentTarget.value = ''; if (f.length) importer(f); }} />
-      {choisie && (
-        <>
-          <div class="voile" onClick={() => setChoisie(null)} />
-          <div class="feuille-actions">
-            <button onClick={() => modifierPage(choisie)}>Recadrer / changer le filtre</button>
-            <button class="danger" onClick={() => supprimerPage(choisie)}>Supprimer la page</button>
-            <button onClick={() => setChoisie(null)}>Fermer</button>
-          </div>
-        </>
+      {enGrand !== null && pages.length > 0 && (
+        <Visionneuse pages={pages} depart={enGrand} onFermer={() => setEnGrand(null)}
+          onModifier={modifierPage} onSupprimer={supprimerPage} />
       )}
       {ajout && (
         <>
